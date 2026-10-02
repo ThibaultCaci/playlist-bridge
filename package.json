@@ -1,17 +1,24 @@
 {
   "name": "playlist-bridge",
   "version": "1.0.0",
-  "description": "",
+  "description": "Convert playlists between Spotify and Apple Music.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
-  "keywords": [],
+  "keywords": [
+    "spotify",
+    "apple-music",
+    "playlist",
+    "converter"
+  ],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "devDependencies": {
     "@types/node": "^26.6.4",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
   }
 }
