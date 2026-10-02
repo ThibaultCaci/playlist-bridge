@@ -5,5 +5,6 @@ export function normalizeText(value: string): string {
       .toLowerCase()
       .trim()
       .replace(/[^\p{L}\p{N}\s]/gu, " ")
-      .replace(/\s+/g, " ");
+      .replace(/\s+/g, " ")
+      .trim();
   }
