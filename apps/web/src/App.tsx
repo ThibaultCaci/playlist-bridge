@@ -6,6 +6,7 @@ import {
   exchangeSpotifyCode,
   generateCodeChallenge,
   generateCodeVerifier,
+  SpotifyClient,
 } from "../../../packages/spotify/src";
 
 const spotifyClientId =
@@ -76,6 +77,18 @@ function App() {
           codeVerifier,
         });
 
+        const spotify = new SpotifyClient(
+          token.access_token
+        );
+
+        const user =
+          await spotify.getCurrentUser();
+
+        console.log(
+          "Connected Spotify user:",
+          user.display_name ?? user.id
+        );
+
         sessionStorage.removeItem(
           "spotify_code_verifier"
         );
@@ -122,7 +135,9 @@ function App() {
         generateCodeVerifier();
 
       const codeChallenge =
-        await generateCodeChallenge(codeVerifier);
+        await generateCodeChallenge(
+          codeVerifier
+        );
 
       sessionStorage.setItem(
         "spotify_code_verifier",
