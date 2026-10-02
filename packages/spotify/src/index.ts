@@ -26,3 +26,12 @@ export type {
   export type {
     SpotifyAuthorizationOptions,
   } from "./auth/authorize";
+
+  export {
+    exchangeSpotifyCode,
+  } from "./auth/token";
+  
+  export type {
+    ExchangeSpotifyCodeOptions,
+    SpotifyTokenResponse,
+  } from "./auth/token";
