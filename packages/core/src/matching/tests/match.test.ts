@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Track } from "../types/track";
-import { scoreTrackMatch } from "./match";
+import type { Track } from "../../types/track";
+import { scoreTrackMatch } from "../match";
 
 const spotifyTrack: Track = {
   id: "spotify-1",

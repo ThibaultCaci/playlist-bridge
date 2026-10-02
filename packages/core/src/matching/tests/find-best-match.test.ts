@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Track } from "../types/track";
-import { findBestMatch } from "./find-best-match";
+import type { Track } from "../../types/track";
+import { findBestMatch } from "../find-best-match";
 
 const source: Track = {
   id: "spotify-source",

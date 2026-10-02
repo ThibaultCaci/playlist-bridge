@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeTrackTitle } from "./normalize-track";
+import { normalizeTrackTitle } from "../normalize-track";
 
 describe("normalizeTrackTitle", () => {
   it("normalizes a standard title", () => {
