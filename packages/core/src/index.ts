@@ -10,3 +10,16 @@ export type {
   export type {
     MusicProvider,
   } from "./types/provider";
+
+  export type {
+    MatchResult,
+    MatchStatus,
+  } from "./matching/types";
+  
+  export {
+    scoreTrackMatch,
+  } from "./matching/match";
+  
+  export {
+    findBestMatch,
+  } from "./matching/find-best-match";

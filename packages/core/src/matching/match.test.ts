@@ -121,4 +121,43 @@ describe("scoreTrackMatch", () => {
       scoreTrackMatch(source, candidate)
     ).toBeLessThan(0.3);
   });
+
+  it("does not trust different ISRCs when metadata is otherwise identical", () => {
+    const candidate = createAppleTrack({
+      isrc: "DIFFERENT123",
+    });
+  
+    const score = scoreTrackMatch(spotifyTrack, candidate);
+  
+    expect(score).toBeLessThan(1);
+  });
+  
+  it("rejects a cover with the same title", () => {
+    const { isrc: _sourceIsrc, ...source } = spotifyTrack;
+  
+    const candidate = createAppleTrack(
+      {
+        title: "Get Lucky",
+        artists: ["Vitamin String Quartet"],
+        album: "VSQ Performs Daft Punk",
+        durationMs: 369000,
+      },
+      true
+    );
+  
+    expect(scoreTrackMatch(source, candidate)).toBeLessThan(0.7);
+  });
+  
+  it("accepts a small duration difference", () => {
+    const { isrc: _sourceIsrc, ...source } = spotifyTrack;
+  
+    const candidate = createAppleTrack(
+      {
+        durationMs: 370500,
+      },
+      true
+    );
+  
+    expect(scoreTrackMatch(source, candidate)).toBeGreaterThan(0.9);
+  });
 });
