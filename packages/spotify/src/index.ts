@@ -18,3 +18,11 @@ export type {
     generateCodeChallenge,
     generateCodeVerifier,
   } from "./auth/pkce";
+
+  export {
+    createSpotifyAuthorizationUrl,
+  } from "./auth/authorize";
+  
+  export type {
+    SpotifyAuthorizationOptions,
+  } from "./auth/authorize";
