@@ -2,7 +2,9 @@
 
 PlaylistBridge is an open-source application designed to transfer playlists between music streaming platforms.
 
-The project currently focuses on **Spotify ↔ Apple Music**, with the goal of providing reliable track matching even when metadata differs slightly between platforms.
+The project currently focuses on **Spotify ↔ Apple Music**, with the goal of providing reliable and transparent track matching even when metadata differs between platforms.
+
+Rather than blindly selecting the first search result returned by another provider, PlaylistBridge analyses track metadata, calculates a confidence score and lets the conversion workflow distinguish reliable, uncertain and missing matches.
 
 > 🚧 PlaylistBridge is currently under active development.
 
@@ -13,12 +15,28 @@ The project currently focuses on **Spotify ↔ Apple Music**, with the goal of p
 ### Spotify
 
 - OAuth 2.0 authentication with PKCE
-- Spotify playlist library retrieval
+- Spotify user profile retrieval
+- Complete Spotify playlist library retrieval
 - Automatic pagination for large playlist libraries
-- Playlist track retrieval with pagination
+- Playlist ownership filters: `Mine`, `All` and `Saved`
+- Playlist search
+- Alphabetical sorting
+- Library pagination
+- Playlist details view
+- Complete playlist track retrieval with pagination
 - Spotify track normalization into a platform-independent format
 - ISRC extraction when available
 - Support for playlists containing hundreds of tracks
+
+### Apple Music
+
+- Apple Music catalog search
+- Apple Music track normalization
+- Developer token generation through a backend service
+- Spotify tracks can already be searched against the real Apple Music catalog
+- Integration with the PlaylistBridge matching engine
+
+Apple Music user authorization and library playlist creation are currently under development.
 
 ### Track matching
 
@@ -39,13 +57,22 @@ The matching engine classifies results as:
 - `uncertain`
 - `unmatched`
 
-This allows PlaylistBridge to avoid blindly selecting the first search result returned by another music provider.
+This allows PlaylistBridge to avoid blindly selecting the first catalog result returned by another music provider.
 
-### Apple Music
+### Conversion workflow
 
-Apple Music integration is planned and the project architecture is already designed to support multiple providers.
+The current Spotify → Apple Music workflow supports:
 
-Real Apple Music API integration requires Apple Music / MusicKit developer credentials and is therefore not enabled yet.
+- Playlist selection
+- Full source playlist loading
+- Real-time conversion progress
+- Apple Music catalog search
+- Match confidence calculation
+- Conversion summary
+- Detailed review of every analysed track
+- Matched / uncertain / unmatched statistics
+
+Manual validation of uncertain matches and final Apple Music playlist creation are the next major steps.
 
 ---
 
@@ -56,19 +83,34 @@ PlaylistBridge is organized as a monorepo:
 ```text
 playlist-bridge/
 ├── apps/
-│   └── web/               # React + Vite web application
+│   ├── api/                       # Backend services
+│   │   └── src/
+│   │       └── server.ts
+│   │
+│   └── web/                       # React + Vite application
+│       └── src/
+│           ├── components/
+│           │   ├── SpotifyLibrary/
+│           │   ├── PlaylistDetails/
+│           │   └── ConversionModal/
+│           │
+│           ├── hooks/
+│           │   ├── useSpotifyAuth.ts
+│           │   ├── useSpotifyPlaylist.ts
+│           │   └── usePlaylistConversion.ts
+│           │
+│           ├── App.tsx
+│           └── musickit.ts
 │
 ├── packages/
-│   ├── core/              # Shared models and matching engine
-│   ├── spotify/           # Spotify API integration
-│   └── apple-music/       # Apple Music integration
+│   ├── core/                      # Shared models and matching engine
+│   ├── spotify/                   # Spotify API integration
+│   └── apple-music/               # Apple Music API integration
 │
-├── package.json
-├── tsconfig.json
 └── README.md
 ```
 
-The application separates provider-specific APIs from the core conversion logic.
+The application separates provider-specific APIs, UI components and conversion logic.
 
 ```text
 ┌─────────────┐
@@ -93,11 +135,69 @@ The application separates provider-specific APIs from the core conversion logic.
            │
            ▼
 ┌─────────────────────┐
-│     Apple Music     │
+│ Apple Music Catalog │
 └─────────────────────┘
 ```
 
-This architecture makes it possible to add additional music providers without coupling the matching logic to a specific API.
+Provider-specific metadata is converted into a shared track model before matching.
+
+This keeps the matching engine independent from Spotify or Apple Music and makes it possible to add additional providers later.
+
+---
+
+## ⚛️ Web application architecture
+
+The React application keeps `App.tsx` focused on orchestration while feature-specific logic is isolated into dedicated hooks and components.
+
+```text
+useSpotifyAuth
+      │
+      ▼
+Spotify authentication
+User profile
+Playlist library
+
+useSpotifyPlaylist
+      │
+      ▼
+Playlist selection
+Track retrieval
+Track mapping
+
+usePlaylistConversion
+      │
+      ▼
+Apple Music search
+Matching
+Progress
+Conversion results
+```
+
+UI responsibilities are separated into components:
+
+```text
+SpotifyLibrary
+      │
+      ├── Search
+      ├── Sorting
+      ├── Ownership filters
+      └── Pagination
+
+PlaylistDetails
+      │
+      ├── Playlist metadata
+      ├── Track listing
+      └── Transfer action
+
+ConversionModal
+      │
+      ├── Progress
+      ├── Match statistics
+      ├── Review
+      └── Transfer state
+```
+
+This keeps provider communication, conversion logic and presentation concerns separated as the application grows.
 
 ---
 
@@ -128,7 +228,7 @@ The current scoring strategy uses:
 
 When both tracks expose an identical ISRC, the match can be considered exact.
 
-Additional safeguards reduce the score when:
+Additional safeguards reduce or cap confidence when:
 
 - ISRCs conflict
 - artists do not match
@@ -137,10 +237,12 @@ Additional safeguards reduce the score when:
 The resulting match is classified according to confidence:
 
 ```text
-score >= 0.90       → matched
-0.70 <= score < .90 → uncertain
-score < 0.70        → unmatched
+confidence >= 0.90       → matched
+0.70 <= confidence < .90 → uncertain
+confidence < 0.70        → unmatched
 ```
+
+This approach makes conversion results inspectable instead of hiding uncertain matches from the user.
 
 ---
 
@@ -150,7 +252,7 @@ Spotify authentication uses the **OAuth 2.0 Authorization Code flow with PKCE**.
 
 No Spotify client secret is exposed in the frontend.
 
-The current Spotify implementation supports:
+The current Spotify flow is:
 
 ```text
 Authenticate user
@@ -158,6 +260,8 @@ Authenticate user
 Load Spotify profile
         ↓
 Load complete playlist library
+        ↓
+Search / filter / sort playlists
         ↓
 Select playlist
         ↓
@@ -177,13 +281,73 @@ The implementation has been tested with:
 
 ---
 
+## 🍎 Apple Music integration
+
+PlaylistBridge can communicate with the Apple Music catalog through the Apple Music API.
+
+The current flow is:
+
+```text
+Normalized Spotify track
+        ↓
+Apple Music catalog search
+        ↓
+Candidate tracks
+        ↓
+PlaylistBridge matching engine
+        ↓
+Best candidate + confidence
+        ↓
+Matched / uncertain / unmatched
+```
+
+A backend service is used for operations that require Apple developer credentials, keeping sensitive signing material outside the browser.
+
+Apple Music user authorization through MusicKit and final playlist creation are still under development.
+
+---
+
+## 🔄 Spotify → Apple Music conversion
+
+The current conversion pipeline is:
+
+```text
+Spotify playlist
+        ↓
+Load all tracks
+        ↓
+Normalize Spotify metadata
+        ↓
+Search Apple Music catalog
+        ↓
+Compare candidates
+        ↓
+Calculate confidence
+        ↓
+┌───────────┬────────────┬─────────────┐
+│  Matched  │ Uncertain  │  Unmatched  │
+└───────────┴────────────┴─────────────┘
+        ↓
+Conversion review
+```
+
+The conversion UI displays progress while tracks are processed and provides a detailed result for every source track.
+
+Only confidently matched tracks are intended to be transferred automatically.
+
+Uncertain matches will require explicit user validation before transfer.
+
+---
+
 ## 🛠️ Tech stack
 
 - TypeScript
 - React
 - Vite
+- Node.js
 - Spotify Web API
-- Apple Music API / MusicKit *(planned)*
+- Apple Music API
+- MusicKit
 - Vitest
 - OAuth 2.0
 - PKCE
@@ -197,6 +361,8 @@ The implementation has been tested with:
 - Node.js
 - npm
 - Spotify Developer application
+
+Apple Music development additionally requires Apple Developer credentials.
 
 ### Clone the repository
 
@@ -237,7 +403,7 @@ VITE_SPOTIFY_REDIRECT_URI=http://127.0.0.1:5173/callback
 
 The same redirect URI must be configured in the Spotify Developer Dashboard.
 
-> Never commit `.env.local` or API credentials to Git.
+> Never commit `.env`, `.env.local`, private keys or API credentials to Git.
 
 ### Start the web application
 
@@ -249,11 +415,28 @@ npm run dev
 
 Then open the local URL displayed by Vite.
 
+### Start the API
+
+The backend is located in:
+
+```text
+apps/api
+```
+
+Install its dependencies if needed:
+
+```bash
+cd apps/api
+npm install
+```
+
+Then start the API using the script defined in `apps/api/package.json`.
+
 ---
 
 ## 🧪 Tests
 
-The matching and Spotify utility layers are tested with Vitest.
+The core matching and provider utility layers are tested with Vitest.
 
 From the repository root:
 
@@ -271,26 +454,64 @@ npm run test:watch
 
 ## 🗺️ Roadmap
 
-- [x] Core track model
+### Core
+
+- [x] Shared track model
 - [x] Metadata normalization
-- [x] Track matching engine
-- [x] Spotify PKCE authentication
-- [x] Spotify user authentication
-- [x] Spotify playlist library
-- [x] Spotify playlist pagination
-- [x] Spotify track retrieval
-- [x] Spotify track pagination
+- [x] Weighted matching engine
+- [x] ISRC matching
+- [x] Match confidence classification
+- [x] Automated tests
+
+### Spotify
+
+- [x] PKCE authentication
+- [x] User profile retrieval
+- [x] Playlist library retrieval
+- [x] Playlist pagination
+- [x] Playlist ownership filters
+- [x] Playlist search and sorting
+- [x] Playlist details
+- [x] Track retrieval
+- [x] Track pagination
 - [x] Spotify → PlaylistBridge track mapping
-- [ ] Apple Music authentication
+
+### Apple Music
+
+- [x] Developer token backend
+- [x] Apple Music catalog search
+- [x] Apple Music → PlaylistBridge track mapping
+- [x] Catalog integration with the matching engine
+- [ ] MusicKit user authorization
 - [ ] Apple Music library retrieval
-- [ ] Apple Music catalog search
-- [ ] Apple Music → PlaylistBridge track mapping
-- [ ] Spotify → Apple Music conversion
+- [ ] Apple Music playlist creation
+
+### Conversion
+
+- [x] Spotify → Apple Music analysis pipeline
+- [x] Conversion progress UI
+- [x] Match statistics
+- [x] Conversion review
+- [ ] Manual validation for uncertain matches
+- [ ] Ignore / accept uncertain matches
+- [ ] Final Spotify → Apple Music playlist transfer
 - [ ] Apple Music → Spotify conversion
-- [ ] Conversion progress UI
-- [ ] Manual review for uncertain matches
-- [ ] Conversion report
-- [ ] Mobile application
+- [ ] Detailed conversion report
+
+### Application
+
+- [x] Feature-based React components
+- [x] Spotify authentication hook
+- [x] Spotify playlist hook
+- [x] Conversion workflow hook
+- [ ] Spotify session persistence
+- [ ] Improved error handling
+- [ ] OAuth state validation
+- [ ] Spotify token refresh
+- [ ] Landing / onboarding experience
+- [ ] Final responsive pass
+- [ ] Production deployment
+- [ ] PWA / mobile application
 
 ---
 
@@ -300,9 +521,19 @@ PlaylistBridge is designed to avoid exposing provider secrets in the frontend.
 
 Spotify authentication uses PKCE and therefore does not require a client secret in the browser.
 
-Future Apple Music integration will keep private signing keys outside of the client application.
+Apple developer signing credentials are handled outside the frontend application.
 
-Sensitive credentials and local environment files must never be committed to the repository.
+Sensitive files such as:
+
+```text
+.env
+.env.local
+*.p8
+```
+
+must never be committed to the repository.
+
+Additional OAuth security improvements, including state validation and token lifecycle management, are planned before production deployment.
 
 ---
 
@@ -315,12 +546,16 @@ PlaylistBridge is both a practical tool and a software engineering project explo
 - PKCE
 - cross-platform data normalization
 - fuzzy metadata matching
+- confidence-based matching
 - TypeScript architecture
+- React architecture
+- custom hooks
 - automated testing
 - resilient API pagination
-- React application development
+- frontend / backend separation
+- secure handling of provider credentials
 
-The long-term goal is to make playlist migration reliable, transparent and easy to review instead of treating music transfer as a simple one-to-one API lookup.
+The long-term goal is to make playlist migration **reliable, transparent and easy to review** instead of treating music transfer as a simple one-to-one API lookup.
 
 ---
 
