@@ -44,6 +44,7 @@ export type {
   export type {
     SpotifyPaging,
     SpotifyPlaylistImage,
+    SpotifyPlaylistItem,
     SpotifyPlaylistSummary,
     SpotifyUser,
   } from "./client";

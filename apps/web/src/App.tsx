@@ -172,6 +172,63 @@ function App() {
     }
   }
 
+  async function handlePlaylistClick(
+    playlist: SpotifyPlaylistSummary
+  ) {
+    const accessToken = sessionStorage.getItem(
+      "spotify_access_token"
+    );
+
+    if (!accessToken) {
+      console.error(
+        "Missing Spotify access token."
+      );
+      return;
+    }
+
+    try {
+      const spotify = new SpotifyClient(
+        accessToken
+      );
+
+      console.log(
+        `Loading playlist: ${playlist.name}`
+      );
+
+      const response =
+        await spotify.getPlaylistItems(
+          playlist.id
+        );
+
+      console.log(
+        `${response.total} items in "${playlist.name}"`
+      );
+
+      console.table(
+        response.items
+          .filter(
+            (item) => item.track !== null
+          )
+          .map((item) => ({
+            title: item.track!.name,
+            artist: item.track!.artists
+              .map((artist) => artist.name)
+              .join(", "),
+            album: item.track!.album.name,
+            duration:
+              Math.round(
+                item.track!.duration_ms / 1000
+              ) + "s",
+          }))
+      );
+    } catch (error) {
+      console.error(
+        "Failed to load Spotify playlist:",
+        error
+      );
+    }
+  }
+
   return (
     <main className="app">
       <header className="app-header">
@@ -226,6 +283,11 @@ function App() {
                 <article
                   className="playlist-card"
                   key={playlist.id}
+                  onClick={() =>
+                    void handlePlaylistClick(
+                      playlist
+                    )
+                  }
                 >
                   <div className="playlist-cover">
                     {image ? (

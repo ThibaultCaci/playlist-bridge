@@ -1,3 +1,5 @@
+import type { SpotifyTrack } from "./types";
+
 const SPOTIFY_API_URL = "https://api.spotify.com/v1";
 
 export class SpotifyApiError extends Error {
@@ -55,6 +57,11 @@ export interface SpotifyPaging<T> {
   previous: string | null;
 }
 
+export interface SpotifyPlaylistItem {
+  added_at: string | null;
+  track: SpotifyTrack | null;
+}
+
 export class SpotifyClient {
   constructor(
     private readonly accessToken: string
@@ -103,5 +110,24 @@ export class SpotifyClient {
     return this.request<
       SpotifyPaging<SpotifyPlaylistSummary>
     >(`/me/playlists?${params.toString()}`);
+  }
+
+  async getPlaylistItems(
+    playlistId: string,
+    limit = 50,
+    offset = 0
+  ): Promise<SpotifyPaging<SpotifyPlaylistItem>> {
+    const params = new URLSearchParams({
+      limit: limit.toString(),
+      offset: offset.toString(),
+    });
+
+    return this.request<
+      SpotifyPaging<SpotifyPlaylistItem>
+    >(
+      `/playlists/${encodeURIComponent(
+        playlistId
+      )}/items?${params.toString()}`
+    );
   }
 }
