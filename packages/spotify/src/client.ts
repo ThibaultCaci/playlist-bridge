@@ -112,6 +112,43 @@ export class SpotifyClient {
     >(`/me/playlists?${params.toString()}`);
   }
 
+  async getAllCurrentUserPlaylists(): Promise<
+    SpotifyPlaylistSummary[]
+  > {
+    const playlists: SpotifyPlaylistSummary[] = [];
+
+    let offset = 0;
+    const limit = 50;
+
+    while (true) {
+      const page =
+        await this.getCurrentUserPlaylists(
+          limit,
+          offset
+        );
+
+      playlists.push(...page.items);
+
+      if (
+        page.next === null ||
+        page.items.length === 0
+      ) {
+        break;
+      }
+
+      offset += page.items.length;
+    }
+
+    return Array.from(
+      new Map(
+        playlists.map((playlist) => [
+          playlist.id,
+          playlist,
+        ])
+      ).values()
+    );
+  }
+
   async getPlaylistItems(
     playlistId: string,
     limit = 50,

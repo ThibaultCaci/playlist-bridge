@@ -110,10 +110,14 @@ function App() {
           user.display_name ?? user.id
         );
 
-        const playlistResponse =
-          await spotify.getCurrentUserPlaylists();
+        const allPlaylists =
+          await spotify.getAllCurrentUserPlaylists();
 
-        setPlaylists(playlistResponse.items);
+        setPlaylists(allPlaylists);
+
+        console.log(
+          `${allPlaylists.length} Spotify playlists loaded`
+        );
 
         sessionStorage.removeItem(
           "spotify_code_verifier"
@@ -348,9 +352,7 @@ function App() {
           <h2>{selectedPlaylist.name}</h2>
 
           {isLoadingTracks ? (
-            <p>
-              Loading all tracks...
-            </p>
+            <p>Loading all tracks...</p>
           ) : (
             <p>
               {tracks.length} tracks ready for
