@@ -1,5 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
 import "./App.css";
+
+import SpotifyLibrary from "./components/SpotifyLibrary/SpotifyLibrary";
 
 import {
   createSpotifyAuthorizationUrl,
@@ -29,13 +36,16 @@ import type {
 
 import {
   authorizeAppleMusic,
+  createAppleMusicPlaylist,
 } from "./musickit";
 
 const spotifyClientId =
-  import.meta.env.VITE_SPOTIFY_CLIENT_ID;
+  import.meta.env
+    .VITE_SPOTIFY_CLIENT_ID;
 
 const spotifyRedirectUri =
-  import.meta.env.VITE_SPOTIFY_REDIRECT_URI;
+  import.meta.env
+    .VITE_SPOTIFY_REDIRECT_URI;
 
 interface ConversionResult {
   sourceTrack: Track;
@@ -49,38 +59,26 @@ type ConversionStatus =
 
 type ConversionView =
   | "summary"
-  | "review";
-
-function getPlaylistTrackCount(
-  playlist: SpotifyPlaylistSummary
-): number {
-  const compatiblePlaylist =
-    playlist as SpotifyPlaylistSummary & {
-      items?: {
-        total?: number;
-      };
-
-      tracks?: {
-        total?: number;
-      };
-    };
-
-  return (
-    compatiblePlaylist.items?.total ??
-    compatiblePlaylist.tracks?.total ??
-    0
-  );
-}
+  | "review"
+  | "success";
 
 function App() {
-  const [isConnecting, setIsConnecting] =
-    useState(false);
+  const [
+    isConnecting,
+    setIsConnecting,
+  ] = useState(false);
 
-  const [isConnected, setIsConnected] =
-    useState(false);
+  const [
+    isConnected,
+    setIsConnected,
+  ] = useState(false);
 
-  const [playlists, setPlaylists] =
-    useState<SpotifyPlaylistSummary[]>([]);
+  const [
+    playlists,
+    setPlaylists,
+  ] = useState<
+    SpotifyPlaylistSummary[]
+  >([]);
 
   const [
     selectedPlaylist,
@@ -90,8 +88,10 @@ function App() {
       null
     );
 
-  const [tracks, setTracks] =
-    useState<Track[]>([]);
+  const [
+    tracks,
+    setTracks,
+  ] = useState<Track[]>([]);
 
   const [
     isLoadingTracks,
@@ -107,25 +107,32 @@ function App() {
     conversionStatus,
     setConversionStatus,
   ] =
-    useState<ConversionStatus>("idle");
+    useState<ConversionStatus>(
+      "idle"
+    );
 
   const [
     conversionView,
     setConversionView,
   ] =
-    useState<ConversionView>("summary");
+    useState<ConversionView>(
+      "summary"
+    );
 
   const [
     conversionResults,
     setConversionResults,
-  ] =
-    useState<ConversionResult[]>([]);
+  ] = useState<
+    ConversionResult[]
+  >([]);
 
   const [
     currentTrack,
     setCurrentTrack,
   ] =
-    useState<Track | null>(null);
+    useState<Track | null>(
+      null
+    );
 
   const [
     processedCount,
@@ -140,14 +147,24 @@ function App() {
   const [
     appleMusicAuthorizationError,
     setAppleMusicAuthorizationError,
-  ] = useState<string | null>(null);
+  ] =
+    useState<string | null>(
+      null
+    );
+
+  const [
+    createdTrackCount,
+    setCreatedTrackCount,
+  ] = useState(0);
 
   const callbackHandled =
     useRef(false);
 
   useEffect(() => {
     async function handleSpotifyCallback() {
-      if (callbackHandled.current) {
+      if (
+        callbackHandled.current
+      ) {
         return;
       }
 
@@ -175,14 +192,17 @@ function App() {
         return;
       }
 
-      callbackHandled.current = true;
+      callbackHandled.current =
+        true;
 
       const codeVerifier =
         sessionStorage.getItem(
           "spotify_code_verifier"
         );
 
-      if (!codeVerifier) {
+      if (
+        !codeVerifier
+      ) {
         console.error(
           "Missing Spotify PKCE code verifier."
         );
@@ -203,17 +223,19 @@ function App() {
 
       try {
         const token =
-          await exchangeSpotifyCode({
-            clientId:
-              spotifyClientId,
+          await exchangeSpotifyCode(
+            {
+              clientId:
+                spotifyClientId,
 
-            code,
+              code,
 
-            redirectUri:
-              spotifyRedirectUri,
+              redirectUri:
+                spotifyRedirectUri,
 
-            codeVerifier,
-          });
+              codeVerifier,
+            }
+          );
 
         const spotify =
           new SpotifyClient(
@@ -245,7 +267,9 @@ function App() {
           token.access_token
         );
 
-        setIsConnected(true);
+        setIsConnected(
+          true
+        );
 
         window.history.replaceState(
           {},
@@ -275,7 +299,9 @@ function App() {
       return;
     }
 
-    setIsConnecting(true);
+    setIsConnecting(
+      true
+    );
 
     try {
       const codeVerifier =
@@ -292,15 +318,17 @@ function App() {
       );
 
       const authorizationUrl =
-        createSpotifyAuthorizationUrl({
-          clientId:
-            spotifyClientId,
+        createSpotifyAuthorizationUrl(
+          {
+            clientId:
+              spotifyClientId,
 
-          redirectUri:
-            spotifyRedirectUri,
+            redirectUri:
+              spotifyRedirectUri,
 
-          codeChallenge,
-        });
+            codeChallenge,
+          }
+        );
 
       window.location.assign(
         authorizationUrl
@@ -311,7 +339,9 @@ function App() {
         error
       );
 
-      setIsConnecting(false);
+      setIsConnecting(
+        false
+      );
     }
   }
 
@@ -324,7 +354,9 @@ function App() {
         "spotify_access_token"
       );
 
-    if (!accessToken) {
+    if (
+      !accessToken
+    ) {
       console.error(
         "Missing Spotify access token."
       );
@@ -363,7 +395,9 @@ function App() {
                 playlistItem.item ??
                 playlistItem.track;
 
-              if (!spotifyTrack) {
+              if (
+                !spotifyTrack
+              ) {
                 return null;
               }
 
@@ -396,7 +430,8 @@ function App() {
 
   async function startConversionAnalysis() {
     if (
-      tracks.length === 0 ||
+      tracks.length ===
+        0 ||
       !selectedPlaylist
     ) {
       return;
@@ -428,6 +463,10 @@ function App() {
 
     setAppleMusicAuthorizationError(
       null
+    );
+
+    setCreatedTrackCount(
+      0
     );
 
     const appleMusic =
@@ -473,9 +512,11 @@ function App() {
 
         const failedMatch:
           MatchResult = {
-            track: undefined,
+            track:
+              undefined,
             confidence: 0,
-            status: "unmatched",
+            status:
+              "unmatched",
           };
 
         results.push({
@@ -507,7 +548,8 @@ function App() {
 
   async function continueToAppleMusic() {
     if (
-      isAuthorizingAppleMusic
+      isAuthorizingAppleMusic ||
+      !selectedPlaylist
     ) {
       return;
     }
@@ -526,38 +568,74 @@ function App() {
       } =
         await authorizeAppleMusic();
 
-      console.log(
-        "Apple Music authorized successfully."
-      );
-
-      console.log(
-        "Music User Token received:",
-        Boolean(
-          musicUserToken
-        )
-      );
-
       /*
-       * Do not print the actual token.
+       * Only automatically
+       * transfer confident
+       * matches.
        *
-       * Next step:
-       * create the playlist in the
-       * user's Apple Music library.
+       * Uncertain and unmatched
+       * tracks remain visible in
+       * the review screen.
        */
+      const appleTrackIds =
+        conversionResults
+          .filter(
+            (
+              result
+            ) =>
+              result.match
+                .status ===
+                "matched" &&
+              result.match
+                .track
+          )
+          .map(
+            (
+              result
+            ) =>
+              result.match
+                .track!.id
+          );
 
-      alert(
-        "Apple Music connected successfully!"
+      if (
+        appleTrackIds.length ===
+        0
+      ) {
+        throw new Error(
+          "No confidently matched tracks are available to transfer."
+        );
+      }
+
+      const result =
+        await createAppleMusicPlaylist(
+          musicUserToken,
+          selectedPlaylist.name,
+          appleTrackIds,
+          "Transferred with PlaylistBridge"
+        );
+
+      setCreatedTrackCount(
+        result.trackCount
+      );
+
+      setConversionView(
+        "success"
+      );
+
+      console.log(
+        "Apple Music playlist created successfully:",
+        result.playlistId
       );
     } catch (error) {
       console.error(
-        "Apple Music authorization failed:",
+        "Apple Music playlist creation failed:",
         error
       );
 
       setAppleMusicAuthorizationError(
         error instanceof Error
           ? error.message
-          : "Apple Music authorization failed."
+          : "Apple Music playlist creation failed."
       );
     } finally {
       setIsAuthorizingAppleMusic(
@@ -590,22 +668,31 @@ function App() {
 
   const matchedCount =
     conversionResults.filter(
-      (result) =>
-        result.match.status ===
+      (
+        result
+      ) =>
+        result.match
+          .status ===
         "matched"
     ).length;
 
   const uncertainCount =
     conversionResults.filter(
-      (result) =>
-        result.match.status ===
+      (
+        result
+      ) =>
+        result.match
+          .status ===
         "uncertain"
     ).length;
 
   const unmatchedCount =
     conversionResults.filter(
-      (result) =>
-        result.match.status ===
+      (
+        result
+      ) =>
+        result.match
+          .status ===
         "unmatched"
     ).length;
 
@@ -626,8 +713,9 @@ function App() {
         </h1>
 
         <p>
-          Transfer your playlists
-          between Spotify and Apple
+          Transfer your
+          playlists between
+          Spotify and Apple
           Music.
         </p>
 
@@ -635,7 +723,8 @@ function App() {
           <div className="connection-status">
             <span className="status-dot" />
 
-            Connected to Spotify
+            Connected to
+            Spotify
           </div>
         ) : (
           <button
@@ -656,99 +745,13 @@ function App() {
       </header>
 
       {isConnected &&
-        playlists.length >
-          0 && (
-          <section className="playlists-section">
-            <div className="section-heading">
-              <div>
-                <h2>
-                  Your Spotify
-                  playlists
-                </h2>
-
-                <p>
-                  Choose a playlist
-                  to transfer to Apple
-                  Music.
-                </p>
-              </div>
-
-              <span className="playlist-count">
-                {
-                  playlists.length
-                }{" "}
-                playlists
-              </span>
-            </div>
-
-            <div className="playlist-grid">
-              {playlists.map(
-                (
-                  playlist
-                ) => {
-                  const image =
-                    playlist
-                      .images?.[0];
-
-                  const trackCount =
-                    getPlaylistTrackCount(
-                      playlist
-                    );
-
-                  return (
-                    <article
-                      className="playlist-card"
-                      key={
-                        playlist.id
-                      }
-                      onClick={() =>
-                        void handlePlaylistClick(
-                          playlist
-                        )
-                      }
-                    >
-                      <div className="playlist-cover">
-                        {image ? (
-                          <img
-                            src={
-                              image.url
-                            }
-                            alt=""
-                          />
-                        ) : (
-                          <div className="playlist-placeholder">
-                            ♪
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="playlist-info">
-                        <h3
-                          title={
-                            playlist.name
-                          }
-                        >
-                          {
-                            playlist.name
-                          }
-                        </h3>
-
-                        <p>
-                          {
-                            trackCount
-                          }{" "}
-                          {trackCount ===
-                          1
-                            ? "track"
-                            : "tracks"}
-                        </p>
-                      </div>
-                    </article>
-                  );
-                }
-              )}
-            </div>
-          </section>
+        playlists.length > 0 && (
+          <SpotifyLibrary
+            playlists={playlists}
+            onSelectPlaylist={
+              handlePlaylistClick
+            }
+          />
         )}
 
       {selectedPlaylist && (
@@ -767,9 +770,11 @@ function App() {
           ) : (
             <>
               <p>
-                {tracks.length}{" "}
-                tracks ready for
-                conversion.
+                {
+                  tracks.length
+                }{" "}
+                tracks ready
+                for conversion.
               </p>
 
               {tracks.length >
@@ -781,8 +786,8 @@ function App() {
                     void startConversionAnalysis()
                   }
                 >
-                  Convert to Apple
-                  Music
+                  Convert to
+                  Apple Music
                 </button>
               )}
             </>
@@ -809,18 +814,21 @@ function App() {
             <div className="conversion-modal-header">
               <div>
                 <span className="conversion-eyebrow">
-                  Spotify → Apple
-                  Music
+                  Spotify →
+                  Apple Music
                 </span>
 
                 <h2 id="conversion-title">
                   {conversionView ===
                   "review"
                     ? "Review conversion"
-                    : conversionStatus ===
-                        "complete"
-                      ? "Conversion analysis complete"
-                      : "Converting to Apple Music"}
+                    : conversionView ===
+                        "success"
+                      ? "Transfer complete"
+                      : conversionStatus ===
+                          "complete"
+                        ? "Conversion analysis complete"
+                        : "Converting to Apple Music"}
                 </h2>
               </div>
 
@@ -842,7 +850,100 @@ function App() {
             </div>
 
             {conversionView ===
-            "summary" ? (
+            "success" ? (
+              <>
+                <div className="conversion-complete">
+                  <strong>
+                    ✓
+                  </strong>
+
+                  <span>
+                    Playlist
+                    created in
+                    Apple Music
+                  </span>
+                </div>
+
+                <div className="conversion-playlist">
+                  <strong>
+                    {
+                      selectedPlaylist?.name
+                    }
+                  </strong>
+
+                  <span>
+                    {
+                      createdTrackCount
+                    }{" "}
+                    tracks
+                    transferred
+                  </span>
+                </div>
+
+                <div className="conversion-stats">
+                  <div className="conversion-stat">
+                    <span className="conversion-stat-icon matched">
+                      ✓
+                    </span>
+
+                    <strong>
+                      {
+                        createdTrackCount
+                      }
+                    </strong>
+
+                    <span>
+                      Transferred
+                    </span>
+                  </div>
+
+                  <div className="conversion-stat">
+                    <span className="conversion-stat-icon uncertain">
+                      ?
+                    </span>
+
+                    <strong>
+                      {
+                        uncertainCount
+                      }
+                    </strong>
+
+                    <span>
+                      Skipped
+                    </span>
+                  </div>
+
+                  <div className="conversion-stat">
+                    <span className="conversion-stat-icon unmatched">
+                      ×
+                    </span>
+
+                    <strong>
+                      {
+                        unmatchedCount
+                      }
+                    </strong>
+
+                    <span>
+                      Not found
+                    </span>
+                  </div>
+                </div>
+
+                <div className="conversion-actions">
+                  <button
+                    className="spotify-button"
+                    type="button"
+                    onClick={
+                      closeConversionModal
+                    }
+                  >
+                    Done
+                  </button>
+                </div>
+              </>
+            ) : conversionView ===
+              "summary" ? (
               <>
                 <div className="conversion-playlist">
                   <strong>
@@ -999,7 +1100,8 @@ function App() {
                         )
                       }
                     >
-                      Review results
+                      Review
+                      results
                     </button>
                   </div>
                 )}
@@ -1011,7 +1113,8 @@ function App() {
                     {
                       conversionResults.length
                     }{" "}
-                    tracks analysed
+                    tracks
+                    analysed
                   </span>
 
                   <strong>
@@ -1092,7 +1195,9 @@ function App() {
                                       .track
                                       .title
                                   }
-                                  {" — "}
+                                  {
+                                    " — "
+                                  }
                                   {match.track.artists.join(
                                     ", "
                                   )}
@@ -1191,8 +1296,8 @@ function App() {
                     }
                   >
                     {isAuthorizingAppleMusic
-                      ? "Connecting to Apple Music..."
-                      : "Continue"}
+                      ? "Creating playlist..."
+                      : `Transfer ${matchedCount} tracks`}
                   </button>
                 </div>
               </div>
