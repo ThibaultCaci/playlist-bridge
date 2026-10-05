@@ -74,7 +74,8 @@ button {
   height: 8px;
   border-radius: 50%;
   background: #1ed760;
-  box-shadow: 0 0 12px rgba(30, 215, 96, 0.65);
+  box-shadow:
+    0 0 12px rgba(30, 215, 96, 0.65);
 }
 
 .playlists-section {
@@ -116,9 +117,11 @@ button {
 .playlist-card {
   min-width: 0;
   padding: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border:
+    1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.035);
+  background:
+    rgba(255, 255, 255, 0.035);
   cursor: pointer;
   transition:
     transform 160ms ease,
@@ -128,8 +131,10 @@ button {
 
 .playlist-card:hover {
   transform: translateY(-4px);
-  background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(255, 255, 255, 0.14);
+  background:
+    rgba(255, 255, 255, 0.07);
+  border-color:
+    rgba(255, 255, 255, 0.14);
 }
 
 .playlist-cover {
@@ -176,6 +181,276 @@ button {
   font-size: 0.85rem;
 }
 
+.selected-playlist {
+  margin-top: 40px;
+  padding: 24px;
+  border:
+    1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background:
+    rgba(255, 255, 255, 0.035);
+}
+
+.selected-playlist h2 {
+  margin: 0;
+}
+
+.selected-playlist p {
+  margin: 8px 0 18px;
+  color: #a1a1aa;
+}
+
+/* Conversion modal */
+
+.conversion-overlay {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+.conversion-modal {
+  width: min(560px, 100%);
+  padding: 28px;
+  border:
+    1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 22px;
+  background: #18181b;
+  box-shadow:
+    0 30px 100px rgba(0, 0, 0, 0.55);
+}
+
+.conversion-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.conversion-eyebrow {
+  display: block;
+  margin-bottom: 8px;
+  color: #1ed760;
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.conversion-modal-header h2 {
+  margin: 0;
+  color: #fafafa;
+  font-size: 1.45rem;
+  letter-spacing: -0.025em;
+}
+
+.conversion-close {
+  display: grid;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border:
+    1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  place-items: center;
+  background:
+    rgba(255, 255, 255, 0.05);
+  color: #d4d4d8;
+  font-size: 1.35rem;
+  cursor: pointer;
+}
+
+.conversion-close:disabled {
+  cursor: not-allowed;
+  opacity: 0.3;
+}
+
+.conversion-playlist {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 28px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background:
+    rgba(255, 255, 255, 0.045);
+}
+
+.conversion-playlist strong {
+  overflow: hidden;
+  color: #f4f4f5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conversion-playlist span {
+  flex-shrink: 0;
+  color: #71717a;
+  font-size: 0.85rem;
+}
+
+.conversion-progress-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 24px 0 9px;
+  color: #a1a1aa;
+  font-size: 0.9rem;
+}
+
+.conversion-progress-row strong {
+  color: #f4f4f5;
+}
+
+.conversion-progress {
+  overflow: hidden;
+  height: 9px;
+  border-radius: 999px;
+  background:
+    rgba(255, 255, 255, 0.08);
+}
+
+.conversion-progress-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: #1ed760;
+  transition: width 250ms ease;
+}
+
+.conversion-current {
+  margin-top: 24px;
+  min-height: 90px;
+  padding: 16px;
+  border:
+    1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+}
+
+.conversion-current span {
+  display: block;
+  margin-bottom: 7px;
+  color: #71717a;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.conversion-current strong {
+  display: block;
+  overflow: hidden;
+  color: #f4f4f5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conversion-current p {
+  overflow: hidden;
+  margin: 4px 0 0;
+  color: #a1a1aa;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conversion-complete {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  margin: 30px 0 10px;
+}
+
+.conversion-complete strong {
+  color: #f4f4f5;
+  font-size: 2rem;
+}
+
+.conversion-complete span {
+  color: #a1a1aa;
+}
+
+.conversion-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.conversion-stat {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  padding: 16px 8px;
+  border:
+    1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  background:
+    rgba(255, 255, 255, 0.025);
+}
+
+.conversion-stat-icon {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 8px;
+  border-radius: 50%;
+  place-items: center;
+  font-weight: 800;
+}
+
+.conversion-stat-icon.matched {
+  background:
+    rgba(30, 215, 96, 0.14);
+  color: #1ed760;
+}
+
+.conversion-stat-icon.uncertain {
+  background:
+    rgba(250, 204, 21, 0.14);
+  color: #facc15;
+}
+
+.conversion-stat-icon.unmatched {
+  background:
+    rgba(248, 113, 113, 0.14);
+  color: #f87171;
+}
+
+.conversion-stat strong {
+  color: #f4f4f5;
+  font-size: 1.2rem;
+}
+
+.conversion-stat > span:last-child {
+  margin-top: 3px;
+  color: #71717a;
+  font-size: 0.78rem;
+}
+
+.conversion-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 26px;
+}
+
+.conversion-secondary-button {
+  border:
+    1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  padding: 12px 20px;
+  background:
+    rgba(255, 255, 255, 0.04);
+  color: #d4d4d8;
+  font-weight: 650;
+  cursor: pointer;
+}
+
 @media (max-width: 600px) {
   .app {
     width: min(100% - 28px, 1200px);
@@ -200,5 +475,36 @@ button {
 
   .playlist-card {
     padding: 8px;
+  }
+
+  .conversion-overlay {
+    padding: 14px;
+  }
+
+  .conversion-modal {
+    padding: 20px;
+    border-radius: 18px;
+  }
+
+  .conversion-playlist {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .conversion-stats {
+    gap: 6px;
+  }
+
+  .conversion-stat {
+    padding: 13px 4px;
+  }
+
+  .conversion-actions {
+    flex-direction: column-reverse;
+  }
+
+  .conversion-actions button {
+    width: 100%;
   }
 }
