@@ -6,12 +6,17 @@ import {
   exchangeSpotifyCode,
   generateCodeChallenge,
   generateCodeVerifier,
+  mapSpotifyTrack,
   SpotifyClient,
 } from "../../../packages/spotify/src";
 
 import type {
   SpotifyPlaylistSummary,
 } from "../../../packages/spotify/src";
+
+import type {
+  Track,
+} from "../../../packages/core/src";
 
 const spotifyClientId =
   import.meta.env.VITE_SPOTIFY_CLIENT_ID;
@@ -28,6 +33,15 @@ function App() {
 
   const [playlists, setPlaylists] =
     useState<SpotifyPlaylistSummary[]>([]);
+
+  const [selectedPlaylist, setSelectedPlaylist] =
+    useState<SpotifyPlaylistSummary | null>(null);
+
+  const [tracks, setTracks] =
+    useState<Track[]>([]);
+
+  const [isLoadingTracks, setIsLoadingTracks] =
+    useState(false);
 
   const callbackHandled = useRef(false);
 
@@ -186,46 +200,54 @@ function App() {
       return;
     }
 
+    setSelectedPlaylist(playlist);
+    setTracks([]);
+    setIsLoadingTracks(true);
+
     try {
       const spotify = new SpotifyClient(
         accessToken
       );
 
-      console.log(
-        `Loading playlist: ${playlist.name}`
-      );
-
-      const response =
-        await spotify.getPlaylistItems(
+      const items =
+        await spotify.getAllPlaylistItems(
           playlist.id
         );
 
+      const mappedTracks = items
+        .filter(
+          (
+            item
+          ): item is typeof item & {
+            track: NonNullable<typeof item.track>;
+          } => item.track !== null
+        )
+        .map((item) =>
+          mapSpotifyTrack(item.track)
+        );
+
+      setTracks(mappedTracks);
+
       console.log(
-        `${response.total} items in "${playlist.name}"`
+        `${mappedTracks.length} tracks mapped from "${playlist.name}"`
       );
 
       console.table(
-        response.items
-          .filter(
-            (item) => item.track !== null
-          )
-          .map((item) => ({
-            title: item.track!.name,
-            artist: item.track!.artists
-              .map((artist) => artist.name)
-              .join(", "),
-            album: item.track!.album.name,
-            duration:
-              Math.round(
-                item.track!.duration_ms / 1000
-              ) + "s",
-          }))
+        mappedTracks.map((track) => ({
+          title: track.title,
+          artists: track.artists.join(", "),
+          album: track.album,
+          provider: track.provider,
+          isrc: track.isrc ?? "—",
+        }))
       );
     } catch (error) {
       console.error(
         "Failed to load Spotify playlist:",
         error
       );
+    } finally {
+      setIsLoadingTracks(false);
     }
   }
 
@@ -318,6 +340,23 @@ function App() {
               );
             })}
           </div>
+        </section>
+      )}
+
+      {selectedPlaylist && (
+        <section className="selected-playlist">
+          <h2>{selectedPlaylist.name}</h2>
+
+          {isLoadingTracks ? (
+            <p>
+              Loading all tracks...
+            </p>
+          ) : (
+            <p>
+              {tracks.length} tracks ready for
+              conversion.
+            </p>
+          )}
         </section>
       )}
     </main>

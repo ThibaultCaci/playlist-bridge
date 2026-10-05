@@ -130,4 +130,34 @@ export class SpotifyClient {
       )}/items?${params.toString()}`
     );
   }
+
+  async getAllPlaylistItems(
+    playlistId: string
+  ): Promise<SpotifyPlaylistItem[]> {
+    const items: SpotifyPlaylistItem[] = [];
+
+    let offset = 0;
+    const limit = 50;
+
+    while (true) {
+      const page = await this.getPlaylistItems(
+        playlistId,
+        limit,
+        offset
+      );
+
+      items.push(...page.items);
+
+      if (
+        page.next === null ||
+        page.items.length === 0
+      ) {
+        break;
+      }
+
+      offset += page.items.length;
+    }
+
+    return items;
+  }
 }
