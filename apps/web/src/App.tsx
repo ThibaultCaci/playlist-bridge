@@ -27,6 +27,10 @@ import type {
   Track,
 } from "../../../packages/core/src";
 
+import {
+  authorizeAppleMusic,
+} from "./musickit";
+
 const spotifyClientId =
   import.meta.env.VITE_SPOTIFY_CLIENT_ID;
 
@@ -55,6 +59,7 @@ function getPlaylistTrackCount(
       items?: {
         total?: number;
       };
+
       tracks?: {
         total?: number;
       };
@@ -126,6 +131,16 @@ function App() {
     processedCount,
     setProcessedCount,
   ] = useState(0);
+
+  const [
+    isAuthorizingAppleMusic,
+    setIsAuthorizingAppleMusic,
+  ] = useState(false);
+
+  const [
+    appleMusicAuthorizationError,
+    setAppleMusicAuthorizationError,
+  ] = useState<string | null>(null);
 
   const callbackHandled =
     useRef(false);
@@ -216,10 +231,6 @@ function App() {
 
         const userPlaylists =
           await spotify.getAllCurrentUserPlaylists();
-
-        console.log(
-          `${userPlaylists.length} Spotify playlists loaded`
-        );
 
         setPlaylists(
           userPlaylists
@@ -371,10 +382,6 @@ function App() {
       setTracks(
         mappedTracks
       );
-
-      console.log(
-        `${mappedTracks.length} tracks mapped from "${playlist.name}"`
-      );
     } catch (error) {
       console.error(
         "Failed to load Spotify playlist:",
@@ -419,6 +426,10 @@ function App() {
       null
     );
 
+    setAppleMusicAuthorizationError(
+      null
+    );
+
     const appleMusic =
       new AppleMusicClient();
 
@@ -444,25 +455,15 @@ function App() {
             candidates
           );
 
-        const result:
-          ConversionResult = {
-            sourceTrack:
-              track,
+        results.push({
+          sourceTrack:
+            track,
 
-            match,
-          };
-
-        results.push(
-          result
-        );
+          match,
+        });
 
         setConversionResults(
           [...results]
-        );
-
-        console.log(
-          `Match: ${track.title}`,
-          match
         );
       } catch (error) {
         console.error(
@@ -504,10 +505,72 @@ function App() {
     );
   }
 
+  async function continueToAppleMusic() {
+    if (
+      isAuthorizingAppleMusic
+    ) {
+      return;
+    }
+
+    setIsAuthorizingAppleMusic(
+      true
+    );
+
+    setAppleMusicAuthorizationError(
+      null
+    );
+
+    try {
+      const {
+        musicUserToken,
+      } =
+        await authorizeAppleMusic();
+
+      console.log(
+        "Apple Music authorized successfully."
+      );
+
+      console.log(
+        "Music User Token received:",
+        Boolean(
+          musicUserToken
+        )
+      );
+
+      /*
+       * Do not print the actual token.
+       *
+       * Next step:
+       * create the playlist in the
+       * user's Apple Music library.
+       */
+
+      alert(
+        "Apple Music connected successfully!"
+      );
+    } catch (error) {
+      console.error(
+        "Apple Music authorization failed:",
+        error
+      );
+
+      setAppleMusicAuthorizationError(
+        error instanceof Error
+          ? error.message
+          : "Apple Music authorization failed."
+      );
+    } finally {
+      setIsAuthorizingAppleMusic(
+        false
+      );
+    }
+  }
+
   function closeConversionModal() {
     if (
       conversionStatus ===
-      "running"
+        "running" ||
+      isAuthorizingAppleMusic
     ) {
       return;
     }
@@ -518,6 +581,10 @@ function App() {
 
     setConversionView(
       "summary"
+    );
+
+    setAppleMusicAuthorizationError(
+      null
     );
   }
 
@@ -766,7 +833,8 @@ function App() {
                 }
                 disabled={
                   conversionStatus ===
-                  "running"
+                    "running" ||
+                  isAuthorizingAppleMusic
                 }
               >
                 ×
@@ -1068,10 +1136,41 @@ function App() {
                   )}
                 </div>
 
+                {appleMusicAuthorizationError && (
+                  <div
+                    style={{
+                      marginTop:
+                        "16px",
+
+                      padding:
+                        "12px 14px",
+
+                      borderRadius:
+                        "10px",
+
+                      background:
+                        "rgba(248, 113, 113, 0.08)",
+
+                      color:
+                        "#f87171",
+
+                      fontSize:
+                        "0.85rem",
+                    }}
+                  >
+                    {
+                      appleMusicAuthorizationError
+                    }
+                  </div>
+                )}
+
                 <div className="conversion-actions">
                   <button
                     className="conversion-secondary-button"
                     type="button"
+                    disabled={
+                      isAuthorizingAppleMusic
+                    }
                     onClick={() =>
                       setConversionView(
                         "summary"
@@ -1084,14 +1183,16 @@ function App() {
                   <button
                     className="spotify-button"
                     type="button"
-                    onClick={() => {
-                      console.log(
-                        "Ready for Apple Music creation:",
-                        conversionResults
-                      );
-                    }}
+                    disabled={
+                      isAuthorizingAppleMusic
+                    }
+                    onClick={() =>
+                      void continueToAppleMusic()
+                    }
                   >
-                    Continue
+                    {isAuthorizingAppleMusic
+                      ? "Connecting to Apple Music..."
+                      : "Continue"}
                   </button>
                 </div>
               </div>
