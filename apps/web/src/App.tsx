@@ -7,6 +7,7 @@ import {
 import "./App.css";
 
 import SpotifyLibrary from "./components/SpotifyLibrary/SpotifyLibrary";
+import PlaylistDetails from "./components/PlaylistDetails/PlaylistDetails";
 
 import {
   createSpotifyAuthorizationUrl,
@@ -435,6 +436,11 @@ function App() {
     }
   }
 
+  function handleBackToLibrary() {
+    setSelectedPlaylist(null);
+    setTracks([]);
+  }
+
   async function startConversionAnalysis() {
     if (
       tracks.length ===
@@ -752,7 +758,8 @@ function App() {
       </header>
 
       {isConnected &&
-        playlists.length > 0 && (
+        playlists.length > 0 &&
+        !selectedPlaylist && (
           <SpotifyLibrary
             playlists={playlists}
             currentUserId={spotifyUserId}
@@ -763,44 +770,15 @@ function App() {
         )}
 
       {selectedPlaylist && (
-        <section className="selected-playlist">
-          <h2>
-            {
-              selectedPlaylist.name
-            }
-          </h2>
-
-          {isLoadingTracks ? (
-            <p>
-              Loading all
-              tracks...
-            </p>
-          ) : (
-            <>
-              <p>
-                {
-                  tracks.length
-                }{" "}
-                tracks ready
-                for conversion.
-              </p>
-
-              {tracks.length >
-                0 && (
-                <button
-                  className="spotify-button"
-                  type="button"
-                  onClick={() =>
-                    void startConversionAnalysis()
-                  }
-                >
-                  Convert to
-                  Apple Music
-                </button>
-              )}
-            </>
-          )}
-        </section>
+        <PlaylistDetails
+          playlist={selectedPlaylist}
+          tracks={tracks}
+          isLoading={isLoadingTracks}
+          onBack={handleBackToLibrary}
+          onTransfer={() =>
+            void startConversionAnalysis()
+          }
+        />
       )}
 
       {isConversionModalOpen && (
