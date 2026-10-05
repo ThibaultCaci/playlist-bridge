@@ -89,6 +89,23 @@ function App() {
           user.display_name ?? user.id
         );
 
+        const playlists =
+          await spotify.getCurrentUserPlaylists();
+
+        console.log(
+          `Spotify playlists: ${playlists.total}`
+        );
+
+        console.table(
+          playlists.items.map((playlist) => ({
+            name: playlist.name,
+            tracks: playlist.tracks.total,
+            owner:
+              playlist.owner.display_name ??
+              playlist.owner.id,
+          }))
+        );
+
         sessionStorage.removeItem(
           "spotify_code_verifier"
         );
@@ -111,7 +128,7 @@ function App() {
         );
       } catch (error) {
         console.error(
-          "Spotify token exchange failed:",
+          "Spotify authentication failed:",
           error
         );
       }

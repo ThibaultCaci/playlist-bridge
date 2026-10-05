@@ -35,3 +35,15 @@ export type {
     ExchangeSpotifyCodeOptions,
     SpotifyTokenResponse,
   } from "./auth/token";
+
+  export {
+    SpotifyApiError,
+    SpotifyClient,
+  } from "./client";
+  
+  export type {
+    SpotifyPaging,
+    SpotifyPlaylistImage,
+    SpotifyPlaylistSummary,
+    SpotifyUser,
+  } from "./client";
