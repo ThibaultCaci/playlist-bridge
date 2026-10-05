@@ -9,6 +9,10 @@ import {
   SpotifyClient,
 } from "../../../packages/spotify/src";
 
+import type {
+  SpotifyPlaylistSummary,
+} from "../../../packages/spotify/src";
+
 const spotifyClientId =
   import.meta.env.VITE_SPOTIFY_CLIENT_ID;
 
@@ -21,6 +25,9 @@ function App() {
 
   const [isConnected, setIsConnected] =
     useState(false);
+
+  const [playlists, setPlaylists] =
+    useState<SpotifyPlaylistSummary[]>([]);
 
   const callbackHandled = useRef(false);
 
@@ -89,22 +96,10 @@ function App() {
           user.display_name ?? user.id
         );
 
-        const playlists =
+        const playlistResponse =
           await spotify.getCurrentUserPlaylists();
 
-        console.log(
-          `Spotify playlists: ${playlists.total}`
-        );
-
-        console.table(
-          playlists.items.map((playlist) => ({
-            name: playlist.name,
-            tracks: playlist.tracks.total,
-            owner:
-              playlist.owner.display_name ??
-              playlist.owner.id,
-          }))
-        );
+        setPlaylists(playlistResponse.items);
 
         sessionStorage.removeItem(
           "spotify_code_verifier"
@@ -116,10 +111,6 @@ function App() {
         );
 
         setIsConnected(true);
-
-        console.log(
-          "Spotify authentication successful."
-        );
 
         window.history.replaceState(
           {},
@@ -182,26 +173,90 @@ function App() {
   }
 
   return (
-    <main>
-      <h1>PlaylistBridge</h1>
+    <main className="app">
+      <header className="app-header">
+        <h1>PlaylistBridge</h1>
 
-      <p>
-        Transfer your playlists between Spotify and
-        Apple Music.
-      </p>
+        <p>
+          Transfer your playlists between Spotify and
+          Apple Music.
+        </p>
 
-      {isConnected ? (
-        <p>Connected to Spotify ✓</p>
-      ) : (
-        <button
-          type="button"
-          onClick={connectToSpotify}
-          disabled={isConnecting}
-        >
-          {isConnecting
-            ? "Connecting..."
-            : "Connect with Spotify"}
-        </button>
+        {isConnected ? (
+          <div className="connection-status">
+            <span className="status-dot" />
+            Connected to Spotify
+          </div>
+        ) : (
+          <button
+            className="spotify-button"
+            type="button"
+            onClick={connectToSpotify}
+            disabled={isConnecting}
+          >
+            {isConnecting
+              ? "Connecting..."
+              : "Connect with Spotify"}
+          </button>
+        )}
+      </header>
+
+      {isConnected && playlists.length > 0 && (
+        <section className="playlists-section">
+          <div className="section-heading">
+            <div>
+              <h2>Your Spotify playlists</h2>
+
+              <p>
+                Choose a playlist to transfer to
+                Apple Music.
+              </p>
+            </div>
+
+            <span className="playlist-count">
+              {playlists.length} playlists
+            </span>
+          </div>
+
+          <div className="playlist-grid">
+            {playlists.map((playlist) => {
+              const image = playlist.images?.[0];
+
+              return (
+                <article
+                  className="playlist-card"
+                  key={playlist.id}
+                >
+                  <div className="playlist-cover">
+                    {image ? (
+                      <img
+                        src={image.url}
+                        alt=""
+                      />
+                    ) : (
+                      <div className="playlist-placeholder">
+                        ♪
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="playlist-info">
+                    <h3 title={playlist.name}>
+                      {playlist.name}
+                    </h3>
+
+                    <p>
+                      {playlist.tracks.total}{" "}
+                      {playlist.tracks.total === 1
+                        ? "track"
+                        : "tracks"}
+                    </p>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
       )}
     </main>
   );
