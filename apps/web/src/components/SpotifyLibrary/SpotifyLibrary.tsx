@@ -12,8 +12,15 @@ import "./SpotifyLibrary.css";
 
 const PLAYLISTS_PER_PAGE = 12;
 
+type PlaylistFilter =
+  | "mine"
+  | "all"
+  | "saved";
+
 interface SpotifyLibraryProps {
   playlists: SpotifyPlaylistSummary[];
+
+  currentUserId: string | null;
 
   onSelectPlaylist: (
     playlist: SpotifyPlaylistSummary
@@ -43,6 +50,7 @@ function getPlaylistTrackCount(
 
 function SpotifyLibrary({
   playlists,
+  currentUserId,
   onSelectPlaylist,
 }: SpotifyLibraryProps) {
   const [
@@ -58,7 +66,36 @@ function SpotifyLibrary({
   const [
     sortDirection,
     setSortDirection,
-  ] = useState<"asc" | "desc">("asc");
+  ] = useState<"asc" | "desc">(
+    "asc"
+  );
+
+  const [
+    playlistFilter,
+    setPlaylistFilter,
+  ] = useState<PlaylistFilter>(
+    "mine"
+  );
+
+  const mineCount =
+    useMemo(
+      () =>
+        currentUserId
+          ? playlists.filter(
+              (playlist) =>
+                playlist.owner.id ===
+                currentUserId
+            ).length
+          : 0,
+      [
+        playlists,
+        currentUserId,
+      ]
+    );
+
+  const savedCount =
+    playlists.length -
+    mineCount;
 
   const filteredPlaylists =
     useMemo(() => {
@@ -67,37 +104,69 @@ function SpotifyLibrary({
           .trim()
           .toLocaleLowerCase();
 
-      return [...playlists]
-        .sort((a, b) => {
-        const comparison =
-            a.name.localeCompare(
-            b.name,
-            undefined,
-            {
-                sensitivity: "base",
-                numeric: true,
+      return playlists
+        .filter(
+          (playlist) => {
+            if (
+              !currentUserId ||
+              playlistFilter ===
+                "all"
+            ) {
+              return true;
             }
+
+            const isMine =
+              playlist.owner.id ===
+              currentUserId;
+
+            if (
+              playlistFilter ===
+              "mine"
+            ) {
+              return isMine;
+            }
+
+            return !isMine;
+          }
+        )
+        .filter(
+          (playlist) => {
+            if (
+              !normalizedQuery
+            ) {
+              return true;
+            }
+
+            return playlist.name
+              .toLocaleLowerCase()
+              .includes(
+                normalizedQuery
+              );
+          }
+        )
+        .sort((a, b) => {
+          const comparison =
+            a.name.localeCompare(
+              b.name,
+              undefined,
+              {
+                sensitivity:
+                  "base",
+                numeric: true,
+              }
             );
 
-        return sortDirection === "asc"
+          return sortDirection ===
+            "asc"
             ? comparison
             : -comparison;
-        })
-        .filter((playlist) => {
-          if (!normalizedQuery) {
-            return true;
-          }
-
-          return playlist.name
-            .toLocaleLowerCase()
-            .includes(
-              normalizedQuery
-            );
         });
     }, [
       playlists,
+      currentUserId,
+      playlistFilter,
       searchQuery,
-      sortDirection
+      sortDirection,
     ]);
 
   const totalPages =
@@ -111,7 +180,10 @@ function SpotifyLibrary({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery]);
+  }, [
+    searchQuery,
+    playlistFilter,
+  ]);
 
   useEffect(() => {
     if (
@@ -150,6 +222,16 @@ function SpotifyLibrary({
     setCurrentPage(
       nextPage
     );
+  }
+
+  function changeFilter(
+    filter: PlaylistFilter
+  ) {
+    setPlaylistFilter(
+      filter
+    );
+
+    setCurrentPage(1);
   }
 
   function getVisiblePageNumbers() {
@@ -230,6 +312,68 @@ function SpotifyLibrary({
         </span>
       </div>
 
+      <div className="spotify-library-filters">
+        <button
+          type="button"
+          className={
+            playlistFilter ===
+            "mine"
+              ? "active"
+              : ""
+          }
+          onClick={() =>
+            changeFilter(
+              "mine"
+            )
+          }
+        >
+          Mine
+          <span>
+            {mineCount}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          className={
+            playlistFilter ===
+            "all"
+              ? "active"
+              : ""
+          }
+          onClick={() =>
+            changeFilter(
+              "all"
+            )
+          }
+        >
+          All
+          <span>
+            {playlists.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          className={
+            playlistFilter ===
+            "saved"
+              ? "active"
+              : ""
+          }
+          onClick={() =>
+            changeFilter(
+              "saved"
+            )
+          }
+        >
+          Saved
+          <span>
+            {savedCount}
+          </span>
+        </button>
+      </div>
+
       <div className="spotify-library-toolbar">
         <label className="spotify-library-search">
           <span className="spotify-library-search-icon">
@@ -270,33 +414,36 @@ function SpotifyLibrary({
         </label>
 
         <button
-            className="spotify-library-sort"
-            type="button"
-            onClick={() => {
-                setSortDirection(
-                (current) =>
-                    current === "asc"
-                    ? "desc"
-                    : "asc"
-                );
+          className="spotify-library-sort"
+          type="button"
+          onClick={() => {
+            setSortDirection(
+              (current) =>
+                current ===
+                "asc"
+                  ? "desc"
+                  : "asc"
+            );
 
-                setCurrentPage(1);
-            }}
-            aria-label={
-                sortDirection === "asc"
-                ? "Sort playlists Z to A"
-                : "Sort playlists A to Z"
-            }
-            >
-            <span>
-                Sort
-            </span>
+            setCurrentPage(1);
+          }}
+          aria-label={
+            sortDirection ===
+            "asc"
+              ? "Sort playlists Z to A"
+              : "Sort playlists A to Z"
+          }
+        >
+          <span>
+            Sort
+          </span>
 
-            <strong>
-                {sortDirection === "asc"
-                ? "A → Z"
-                : "Z → A"}
-            </strong>
+          <strong>
+            {sortDirection ===
+            "asc"
+              ? "A → Z"
+              : "Z → A"}
+          </strong>
         </button>
       </div>
 
@@ -525,20 +672,29 @@ function SpotifyLibrary({
           </strong>
 
           <p>
-            No playlist matches
-            “{searchQuery}”.
+            {hasSearch
+              ? `No playlist matches “${searchQuery}”.`
+              : playlistFilter ===
+                  "mine"
+                ? "You don't have any personal playlists."
+                : playlistFilter ===
+                    "saved"
+                  ? "You don't have any saved playlists."
+                  : "No playlists available."}
           </p>
 
-          <button
-            type="button"
-            onClick={() =>
-              setSearchQuery(
-                ""
-              )
-            }
-          >
-            Clear search
-          </button>
+          {hasSearch && (
+            <button
+              type="button"
+              onClick={() =>
+                setSearchQuery(
+                  ""
+                )
+              }
+            >
+              Clear search
+            </button>
+          )}
         </div>
       )}
     </section>

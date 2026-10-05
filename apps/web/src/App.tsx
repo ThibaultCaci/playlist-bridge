@@ -99,6 +99,11 @@ function App() {
   ] = useState(false);
 
   const [
+    spotifyUserId,
+    setSpotifyUserId,
+  ] = useState<string | null>(null);
+
+  const [
     isConversionModalOpen,
     setIsConversionModalOpen,
   ] = useState(false);
@@ -250,6 +255,8 @@ function App() {
           user.display_name ??
             user.id
         );
+
+        setSpotifyUserId(user.id);
 
         const userPlaylists =
           await spotify.getAllCurrentUserPlaylists();
@@ -748,6 +755,7 @@ function App() {
         playlists.length > 0 && (
           <SpotifyLibrary
             playlists={playlists}
+            currentUserId={spotifyUserId}
             onSelectPlaylist={
               handlePlaylistClick
             }

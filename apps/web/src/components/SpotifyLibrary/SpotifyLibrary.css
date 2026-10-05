@@ -350,6 +350,82 @@
   cursor: pointer;
 }
 
+.spotify-library-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.spotify-library-filters button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border:
+    1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background:
+    rgba(255, 255, 255, 0.035);
+  color: #a1a1aa;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    transform 150ms ease;
+}
+
+.spotify-library-filters button:hover {
+  transform: translateY(-1px);
+  border-color:
+    rgba(255, 255, 255, 0.15);
+  background:
+    rgba(255, 255, 255, 0.07);
+  color: #f4f4f5;
+}
+
+.spotify-library-filters button.active {
+  border-color:
+    rgba(30, 215, 96, 0.35);
+  background:
+    rgba(30, 215, 96, 0.12);
+  color: #1ed760;
+}
+
+.spotify-library-filters button span {
+  display: grid;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  place-items: center;
+  background:
+    rgba(255, 255, 255, 0.06);
+  color: #71717a;
+  font-size: 0.72rem;
+}
+
+.spotify-library-filters button.active span {
+  background:
+    rgba(30, 215, 96, 0.13);
+  color: #1ed760;
+}
+
+@media (max-width: 600px) {
+  .spotify-library-filters {
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .spotify-library-filters button {
+    flex-shrink: 0;
+  }
+}
+
 @media (max-width: 900px) {
   .spotify-library-grid {
     grid-template-columns:
