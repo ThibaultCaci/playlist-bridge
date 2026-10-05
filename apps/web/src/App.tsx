@@ -14,7 +14,16 @@ import type {
   SpotifyPlaylistSummary,
 } from "../../../packages/spotify/src";
 
+import {
+  AppleMusicClient,
+} from "../../../packages/apple-music/src";
+
+import {
+  findBestMatch,
+} from "../../../packages/core/src";
+
 import type {
+  MatchResult,
   Track,
 } from "../../../packages/core/src";
 
@@ -23,6 +32,31 @@ const spotifyClientId =
 
 const spotifyRedirectUri =
   import.meta.env.VITE_SPOTIFY_REDIRECT_URI;
+
+interface AppleMatchTest {
+  sourceTrack: Track;
+  result: MatchResult;
+}
+
+function getPlaylistTrackCount(
+  playlist: SpotifyPlaylistSummary
+): number {
+  const compatiblePlaylist =
+    playlist as SpotifyPlaylistSummary & {
+      items?: {
+        total?: number;
+      };
+      tracks?: {
+        total?: number;
+      };
+    };
+
+  return (
+    compatiblePlaylist.items?.total ??
+    compatiblePlaylist.tracks?.total ??
+    0
+  );
+}
 
 function App() {
   const [isConnecting, setIsConnecting] =
@@ -42,6 +76,12 @@ function App() {
 
   const [isLoadingTracks, setIsLoadingTracks] =
     useState(false);
+
+  const [isTestingApple, setIsTestingApple] =
+    useState(false);
+
+  const [appleMatchTest, setAppleMatchTest] =
+    useState<AppleMatchTest | null>(null);
 
   const callbackHandled = useRef(false);
 
@@ -72,9 +112,10 @@ function App() {
 
       callbackHandled.current = true;
 
-      const codeVerifier = sessionStorage.getItem(
-        "spotify_code_verifier"
-      );
+      const codeVerifier =
+        sessionStorage.getItem(
+          "spotify_code_verifier"
+        );
 
       if (!codeVerifier) {
         console.error(
@@ -83,7 +124,10 @@ function App() {
         return;
       }
 
-      if (!spotifyClientId || !spotifyRedirectUri) {
+      if (
+        !spotifyClientId ||
+        !spotifyRedirectUri
+      ) {
         console.error(
           "Missing Spotify environment configuration."
         );
@@ -91,16 +135,19 @@ function App() {
       }
 
       try {
-        const token = await exchangeSpotifyCode({
-          clientId: spotifyClientId,
-          code,
-          redirectUri: spotifyRedirectUri,
-          codeVerifier,
-        });
+        const token =
+          await exchangeSpotifyCode({
+            clientId: spotifyClientId,
+            code,
+            redirectUri:
+              spotifyRedirectUri,
+            codeVerifier,
+          });
 
-        const spotify = new SpotifyClient(
-          token.access_token
-        );
+        const spotify =
+          new SpotifyClient(
+            token.access_token
+          );
 
         const user =
           await spotify.getCurrentUser();
@@ -110,14 +157,14 @@ function App() {
           user.display_name ?? user.id
         );
 
-        const allPlaylists =
+        const userPlaylists =
           await spotify.getAllCurrentUserPlaylists();
 
-        setPlaylists(allPlaylists);
-
         console.log(
-          `${allPlaylists.length} Spotify playlists loaded`
+          `${userPlaylists.length} Spotify playlists loaded`
         );
+
+        setPlaylists(userPlaylists);
 
         sessionStorage.removeItem(
           "spotify_code_verifier"
@@ -147,7 +194,10 @@ function App() {
   }, []);
 
   async function connectToSpotify() {
-    if (!spotifyClientId || !spotifyRedirectUri) {
+    if (
+      !spotifyClientId ||
+      !spotifyRedirectUri
+    ) {
       console.error(
         "Missing Spotify environment configuration."
       );
@@ -173,7 +223,8 @@ function App() {
       const authorizationUrl =
         createSpotifyAuthorizationUrl({
           clientId: spotifyClientId,
-          redirectUri: spotifyRedirectUri,
+          redirectUri:
+            spotifyRedirectUri,
           codeChallenge,
         });
 
@@ -193,9 +244,10 @@ function App() {
   async function handlePlaylistClick(
     playlist: SpotifyPlaylistSummary
   ) {
-    const accessToken = sessionStorage.getItem(
-      "spotify_access_token"
-    );
+    const accessToken =
+      sessionStorage.getItem(
+        "spotify_access_token"
+      );
 
     if (!accessToken) {
       console.error(
@@ -206,12 +258,12 @@ function App() {
 
     setSelectedPlaylist(playlist);
     setTracks([]);
+    setAppleMatchTest(null);
     setIsLoadingTracks(true);
 
     try {
-      const spotify = new SpotifyClient(
-        accessToken
-      );
+      const spotify =
+        new SpotifyClient(accessToken);
 
       const items =
         await spotify.getAllPlaylistItems(
@@ -219,31 +271,28 @@ function App() {
         );
 
       const mappedTracks = items
+        .map((playlistItem) => {
+          const spotifyTrack =
+            playlistItem.item ??
+            playlistItem.track;
+
+          if (!spotifyTrack) {
+            return null;
+          }
+
+          return mapSpotifyTrack(
+            spotifyTrack
+          );
+        })
         .filter(
-          (
-            item
-          ): item is typeof item & {
-            track: NonNullable<typeof item.track>;
-          } => item.track !== null
-        )
-        .map((item) =>
-          mapSpotifyTrack(item.track)
+          (track): track is Track =>
+            track !== null
         );
 
       setTracks(mappedTracks);
 
       console.log(
         `${mappedTracks.length} tracks mapped from "${playlist.name}"`
-      );
-
-      console.table(
-        mappedTracks.map((track) => ({
-          title: track.title,
-          artists: track.artists.join(", "),
-          album: track.album,
-          provider: track.provider,
-          isrc: track.isrc ?? "—",
-        }))
       );
     } catch (error) {
       console.error(
@@ -255,14 +304,68 @@ function App() {
     }
   }
 
+  async function testFirstTrackOnAppleMusic() {
+    const sourceTrack = tracks[0];
+
+    if (!sourceTrack) {
+      return;
+    }
+
+    setIsTestingApple(true);
+    setAppleMatchTest(null);
+
+    try {
+      const appleMusic =
+        new AppleMusicClient();
+
+      const candidates =
+        await appleMusic.searchTrack(
+          sourceTrack
+        );
+
+      console.log(
+        "Spotify source track:",
+        sourceTrack
+      );
+
+      console.log(
+        "Apple Music candidates:",
+        candidates
+      );
+
+      const result =
+        findBestMatch(
+          sourceTrack,
+          candidates
+        );
+
+      console.log(
+        "PlaylistBridge match:",
+        result
+      );
+
+      setAppleMatchTest({
+        sourceTrack,
+        result,
+      });
+    } catch (error) {
+      console.error(
+        "Apple Music matching test failed:",
+        error
+      );
+    } finally {
+      setIsTestingApple(false);
+    }
+  }
+
   return (
     <main className="app">
       <header className="app-header">
         <h1>PlaylistBridge</h1>
 
         <p>
-          Transfer your playlists between Spotify and
-          Apple Music.
+          Transfer your playlists between
+          Spotify and Apple Music.
         </p>
 
         {isConnected ? (
@@ -284,80 +387,180 @@ function App() {
         )}
       </header>
 
-      {isConnected && playlists.length > 0 && (
-        <section className="playlists-section">
-          <div className="section-heading">
-            <div>
-              <h2>Your Spotify playlists</h2>
+      {isConnected &&
+        playlists.length > 0 && (
+          <section className="playlists-section">
+            <div className="section-heading">
+              <div>
+                <h2>
+                  Your Spotify playlists
+                </h2>
 
-              <p>
-                Choose a playlist to transfer to
-                Apple Music.
-              </p>
+                <p>
+                  Choose a playlist to
+                  transfer to Apple Music.
+                </p>
+              </div>
+
+              <span className="playlist-count">
+                {playlists.length} playlists
+              </span>
             </div>
 
-            <span className="playlist-count">
-              {playlists.length} playlists
-            </span>
-          </div>
+            <div className="playlist-grid">
+              {playlists.map(
+                (playlist) => {
+                  const image =
+                    playlist.images?.[0];
 
-          <div className="playlist-grid">
-            {playlists.map((playlist) => {
-              const image = playlist.images?.[0];
-
-              return (
-                <article
-                  className="playlist-card"
-                  key={playlist.id}
-                  onClick={() =>
-                    void handlePlaylistClick(
+                  const trackCount =
+                    getPlaylistTrackCount(
                       playlist
-                    )
-                  }
-                >
-                  <div className="playlist-cover">
-                    {image ? (
-                      <img
-                        src={image.url}
-                        alt=""
-                      />
-                    ) : (
-                      <div className="playlist-placeholder">
-                        ♪
+                    );
+
+                  return (
+                    <article
+                      className="playlist-card"
+                      key={playlist.id}
+                      onClick={() =>
+                        void handlePlaylistClick(
+                          playlist
+                        )
+                      }
+                    >
+                      <div className="playlist-cover">
+                        {image ? (
+                          <img
+                            src={image.url}
+                            alt=""
+                          />
+                        ) : (
+                          <div className="playlist-placeholder">
+                            ♪
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
 
-                  <div className="playlist-info">
-                    <h3 title={playlist.name}>
-                      {playlist.name}
-                    </h3>
+                      <div className="playlist-info">
+                        <h3
+                          title={
+                            playlist.name
+                          }
+                        >
+                          {playlist.name}
+                        </h3>
 
-                    <p>
-                      {playlist.tracks.total}{" "}
-                      {playlist.tracks.total === 1
-                        ? "track"
-                        : "tracks"}
-                    </p>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-      )}
+                        <p>
+                          {trackCount}{" "}
+                          {trackCount === 1
+                            ? "track"
+                            : "tracks"}
+                        </p>
+                      </div>
+                    </article>
+                  );
+                }
+              )}
+            </div>
+          </section>
+        )}
 
       {selectedPlaylist && (
         <section className="selected-playlist">
-          <h2>{selectedPlaylist.name}</h2>
+          <h2>
+            {selectedPlaylist.name}
+          </h2>
 
           {isLoadingTracks ? (
-            <p>Loading all tracks...</p>
-          ) : (
             <p>
-              {tracks.length} tracks ready for
-              conversion.
+              Loading all tracks...
             </p>
+          ) : (
+            <>
+              <p>
+                {tracks.length} tracks ready
+                for conversion.
+              </p>
+
+              {tracks.length > 0 && (
+                <button
+                  className="spotify-button"
+                  type="button"
+                  onClick={() =>
+                    void testFirstTrackOnAppleMusic()
+                  }
+                  disabled={
+                    isTestingApple
+                  }
+                >
+                  {isTestingApple
+                    ? "Searching Apple Music..."
+                    : "Test first track on Apple Music"}
+                </button>
+              )}
+
+              {appleMatchTest && (
+                <div>
+                  <h3>
+                    First real Apple Music match
+                  </h3>
+
+                  <p>
+                    Spotify:{" "}
+                    <strong>
+                      {
+                        appleMatchTest
+                          .sourceTrack.title
+                      }
+                    </strong>{" "}
+                    —{" "}
+                    {appleMatchTest.sourceTrack.artists.join(
+                      ", "
+                    )}
+                  </p>
+
+                  <p>
+                    Status:{" "}
+                    <strong>
+                      {
+                        appleMatchTest
+                          .result.status
+                      }
+                    </strong>
+                  </p>
+
+                  <p>
+                    Score:{" "}
+                    <strong>
+                      {Math.round(
+                        appleMatchTest
+                          .result.confidence *
+                          100
+                      )}
+                      %
+                    </strong>
+                  </p>
+
+                  {appleMatchTest.result
+                    .track && (
+                    <p>
+                      Apple Music:{" "}
+                      <strong>
+                        {
+                          appleMatchTest
+                            .result.track
+                            .title
+                        }
+                      </strong>{" "}
+                      —{" "}
+                      {appleMatchTest.result.track.artists.join(
+                        ", "
+                      )}
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </section>
       )}

@@ -1,6 +1,7 @@
 import type { SpotifyTrack } from "./types";
 
-const SPOTIFY_API_URL = "https://api.spotify.com/v1";
+const SPOTIFY_API_URL =
+  "https://api.spotify.com/v1";
 
 export class SpotifyApiError extends Error {
   constructor(
@@ -36,14 +37,28 @@ export interface SpotifyPlaylistSummary {
   public: boolean;
   collaborative: boolean;
   images: SpotifyPlaylistImage[];
+
   owner: {
     id: string;
     display_name: string | null;
   };
+
   external_urls: {
     spotify: string;
   };
-  tracks: {
+
+  /*
+   * Spotify has exposed playlist item counts
+   * through different fields depending on the
+   * API response/version.
+   *
+   * Keep both for compatibility.
+   */
+  items?: {
+    total: number;
+  };
+
+  tracks?: {
     total: number;
   };
 }
@@ -57,9 +72,19 @@ export interface SpotifyPaging<T> {
   previous: string | null;
 }
 
+/*
+ * Spotify playlist item responses may expose
+ * the media object as either `item` or `track`.
+ *
+ * `item` is the current shape while `track`
+ * keeps compatibility with older responses.
+ */
 export interface SpotifyPlaylistItem {
-  added_at: string | null;
-  track: SpotifyTrack | null;
+  added_at?: string | null;
+
+  item?: SpotifyTrack | null;
+
+  track?: SpotifyTrack | null;
 }
 
 export class SpotifyClient {
@@ -75,8 +100,11 @@ export class SpotifyClient {
       `${SPOTIFY_API_URL}${endpoint}`,
       {
         ...options,
+
         headers: {
-          Authorization: `Bearer ${this.accessToken}`,
+          Authorization:
+            `Bearer ${this.accessToken}`,
+
           ...options.headers,
         },
       }
@@ -95,13 +123,17 @@ export class SpotifyClient {
   }
 
   async getCurrentUser(): Promise<SpotifyUser> {
-    return this.request<SpotifyUser>("/me");
+    return this.request<SpotifyUser>(
+      "/me"
+    );
   }
 
   async getCurrentUserPlaylists(
     limit = 50,
     offset = 0
-  ): Promise<SpotifyPaging<SpotifyPlaylistSummary>> {
+  ): Promise<
+    SpotifyPaging<SpotifyPlaylistSummary>
+  > {
     const params = new URLSearchParams({
       limit: limit.toString(),
       offset: offset.toString(),
@@ -109,13 +141,16 @@ export class SpotifyClient {
 
     return this.request<
       SpotifyPaging<SpotifyPlaylistSummary>
-    >(`/me/playlists?${params.toString()}`);
+    >(
+      `/me/playlists?${params.toString()}`
+    );
   }
 
   async getAllCurrentUserPlaylists(): Promise<
     SpotifyPlaylistSummary[]
   > {
-    const playlists: SpotifyPlaylistSummary[] = [];
+    const playlists:
+      SpotifyPlaylistSummary[] = [];
 
     let offset = 0;
     const limit = 50;
@@ -139,6 +174,12 @@ export class SpotifyClient {
       offset += page.items.length;
     }
 
+    /*
+     * Spotify may occasionally return the same
+     * playlist more than once across pages.
+     *
+     * Deduplicate by Spotify playlist ID.
+     */
     return Array.from(
       new Map(
         playlists.map((playlist) => [
@@ -153,7 +194,9 @@ export class SpotifyClient {
     playlistId: string,
     limit = 50,
     offset = 0
-  ): Promise<SpotifyPaging<SpotifyPlaylistItem>> {
+  ): Promise<
+    SpotifyPaging<SpotifyPlaylistItem>
+  > {
     const params = new URLSearchParams({
       limit: limit.toString(),
       offset: offset.toString(),
@@ -171,17 +214,19 @@ export class SpotifyClient {
   async getAllPlaylistItems(
     playlistId: string
   ): Promise<SpotifyPlaylistItem[]> {
-    const items: SpotifyPlaylistItem[] = [];
+    const items:
+      SpotifyPlaylistItem[] = [];
 
     let offset = 0;
     const limit = 50;
 
     while (true) {
-      const page = await this.getPlaylistItems(
-        playlistId,
-        limit,
-        offset
-      );
+      const page =
+        await this.getPlaylistItems(
+          playlistId,
+          limit,
+          offset
+        );
 
       items.push(...page.items);
 
