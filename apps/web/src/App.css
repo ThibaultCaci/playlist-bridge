@@ -209,13 +209,13 @@ button {
   display: grid;
   place-items: center;
   padding: 24px;
-  background:
-    rgba(0, 0, 0, 0.72);
+  background: rgba(0, 0, 0, 0.72);
   backdrop-filter: blur(8px);
 }
 
 .conversion-modal {
   width: min(560px, 100%);
+  max-height: calc(100vh - 48px);
   padding: 28px;
   border:
     1px solid rgba(255, 255, 255, 0.1);
@@ -223,6 +223,10 @@ button {
   background: #18181b;
   box-shadow:
     0 30px 100px rgba(0, 0, 0, 0.55);
+}
+
+.conversion-modal-review {
+  width: min(720px, 100%);
 }
 
 .conversion-modal-header {
@@ -451,6 +455,163 @@ button {
   cursor: pointer;
 }
 
+/* Review */
+
+.conversion-review {
+  margin-top: 24px;
+}
+
+.conversion-review-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+  color: #71717a;
+  font-size: 0.85rem;
+}
+
+.conversion-review-summary strong {
+  color: #d4d4d8;
+}
+
+.conversion-review-list {
+  display: flex;
+  overflow-y: auto;
+  flex-direction: column;
+  gap: 8px;
+  max-height: min(480px, 55vh);
+  padding-right: 6px;
+}
+
+.conversion-review-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.conversion-review-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.conversion-review-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background:
+    rgba(255, 255, 255, 0.14);
+}
+
+.conversion-review-item {
+  display: grid;
+  grid-template-columns:
+    34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border:
+    1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  background:
+    rgba(255, 255, 255, 0.025);
+}
+
+.conversion-review-item.uncertain {
+  border-color:
+    rgba(250, 204, 21, 0.18);
+}
+
+.conversion-review-item.unmatched {
+  border-color:
+    rgba(248, 113, 113, 0.18);
+}
+
+.conversion-review-status {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  place-items: center;
+  font-weight: 800;
+}
+
+.conversion-review-status.matched {
+  background:
+    rgba(30, 215, 96, 0.14);
+  color: #1ed760;
+}
+
+.conversion-review-status.uncertain {
+  background:
+    rgba(250, 204, 21, 0.14);
+  color: #facc15;
+}
+
+.conversion-review-status.unmatched {
+  background:
+    rgba(248, 113, 113, 0.14);
+  color: #f87171;
+}
+
+.conversion-review-track {
+  min-width: 0;
+}
+
+.conversion-review-track > strong {
+  display: block;
+  overflow: hidden;
+  color: #f4f4f5;
+  font-size: 0.94rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conversion-review-track > span {
+  display: block;
+  overflow: hidden;
+  margin-top: 3px;
+  color: #71717a;
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conversion-review-match {
+  margin-top: 9px;
+}
+
+.conversion-review-match span {
+  display: block;
+  color: #52525b;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.conversion-review-match p {
+  overflow: hidden;
+  margin: 3px 0 0;
+  color: #a1a1aa;
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conversion-review-score {
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column;
+  min-width: 62px;
+}
+
+.conversion-review-score strong {
+  color: #f4f4f5;
+  font-size: 0.9rem;
+}
+
+.conversion-review-score span {
+  margin-top: 4px;
+  color: #71717a;
+  font-size: 0.7rem;
+}
+
 @media (max-width: 600px) {
   .app {
     width: min(100% - 28px, 1200px);
@@ -498,6 +659,22 @@ button {
 
   .conversion-stat {
     padding: 13px 4px;
+  }
+
+  .conversion-review-list {
+    max-height: 58vh;
+  }
+
+  .conversion-review-item {
+    grid-template-columns:
+      30px minmax(0, 1fr);
+  }
+
+  .conversion-review-score {
+    grid-column: 2;
+    align-items: flex-start;
+    flex-direction: row;
+    gap: 6px;
   }
 
   .conversion-actions {

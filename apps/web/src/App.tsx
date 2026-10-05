@@ -43,6 +43,10 @@ type ConversionStatus =
   | "running"
   | "complete";
 
+type ConversionView =
+  | "summary"
+  | "review";
+
 function getPlaylistTrackCount(
   playlist: SpotifyPlaylistSummary
 ): number {
@@ -73,14 +77,21 @@ function App() {
   const [playlists, setPlaylists] =
     useState<SpotifyPlaylistSummary[]>([]);
 
-  const [selectedPlaylist, setSelectedPlaylist] =
-    useState<SpotifyPlaylistSummary | null>(null);
+  const [
+    selectedPlaylist,
+    setSelectedPlaylist,
+  ] =
+    useState<SpotifyPlaylistSummary | null>(
+      null
+    );
 
   const [tracks, setTracks] =
     useState<Track[]>([]);
 
-  const [isLoadingTracks, setIsLoadingTracks] =
-    useState(false);
+  const [
+    isLoadingTracks,
+    setIsLoadingTracks,
+  ] = useState(false);
 
   const [
     isConversionModalOpen,
@@ -90,24 +101,34 @@ function App() {
   const [
     conversionStatus,
     setConversionStatus,
-  ] = useState<ConversionStatus>("idle");
+  ] =
+    useState<ConversionStatus>("idle");
+
+  const [
+    conversionView,
+    setConversionView,
+  ] =
+    useState<ConversionView>("summary");
 
   const [
     conversionResults,
     setConversionResults,
-  ] = useState<ConversionResult[]>([]);
+  ] =
+    useState<ConversionResult[]>([]);
 
   const [
     currentTrack,
     setCurrentTrack,
-  ] = useState<Track | null>(null);
+  ] =
+    useState<Track | null>(null);
 
   const [
     processedCount,
     setProcessedCount,
   ] = useState(0);
 
-  const callbackHandled = useRef(false);
+  const callbackHandled =
+    useRef(false);
 
   useEffect(() => {
     async function handleSpotifyCallback() {
@@ -115,18 +136,23 @@ function App() {
         return;
       }
 
-      const params = new URLSearchParams(
-        window.location.search
-      );
+      const params =
+        new URLSearchParams(
+          window.location.search
+        );
 
-      const code = params.get("code");
-      const error = params.get("error");
+      const code =
+        params.get("code");
+
+      const error =
+        params.get("error");
 
       if (error) {
         console.error(
           "Spotify authorization failed:",
           error
         );
+
         return;
       }
 
@@ -145,6 +171,7 @@ function App() {
         console.error(
           "Missing Spotify PKCE code verifier."
         );
+
         return;
       }
 
@@ -155,16 +182,21 @@ function App() {
         console.error(
           "Missing Spotify environment configuration."
         );
+
         return;
       }
 
       try {
         const token =
           await exchangeSpotifyCode({
-            clientId: spotifyClientId,
+            clientId:
+              spotifyClientId,
+
             code,
+
             redirectUri:
               spotifyRedirectUri,
+
             codeVerifier,
           });
 
@@ -178,7 +210,8 @@ function App() {
 
         console.log(
           "Connected Spotify user:",
-          user.display_name ?? user.id
+          user.display_name ??
+            user.id
         );
 
         const userPlaylists =
@@ -188,7 +221,9 @@ function App() {
           `${userPlaylists.length} Spotify playlists loaded`
         );
 
-        setPlaylists(userPlaylists);
+        setPlaylists(
+          userPlaylists
+        );
 
         sessionStorage.removeItem(
           "spotify_code_verifier"
@@ -225,6 +260,7 @@ function App() {
       console.error(
         "Missing Spotify environment configuration."
       );
+
       return;
     }
 
@@ -246,9 +282,12 @@ function App() {
 
       const authorizationUrl =
         createSpotifyAuthorizationUrl({
-          clientId: spotifyClientId,
+          clientId:
+            spotifyClientId,
+
           redirectUri:
             spotifyRedirectUri,
+
           codeChallenge,
         });
 
@@ -266,7 +305,8 @@ function App() {
   }
 
   async function handlePlaylistClick(
-    playlist: SpotifyPlaylistSummary
+    playlist:
+      SpotifyPlaylistSummary
   ) {
     const accessToken =
       sessionStorage.getItem(
@@ -277,42 +317,60 @@ function App() {
       console.error(
         "Missing Spotify access token."
       );
+
       return;
     }
 
-    setSelectedPlaylist(playlist);
+    setSelectedPlaylist(
+      playlist
+    );
+
     setTracks([]);
-    setIsLoadingTracks(true);
+
+    setIsLoadingTracks(
+      true
+    );
 
     try {
       const spotify =
-        new SpotifyClient(accessToken);
+        new SpotifyClient(
+          accessToken
+        );
 
       const items =
         await spotify.getAllPlaylistItems(
           playlist.id
         );
 
-      const mappedTracks = items
-        .map((playlistItem) => {
-          const spotifyTrack =
-            playlistItem.item ??
-            playlistItem.track;
+      const mappedTracks =
+        items
+          .map(
+            (
+              playlistItem
+            ) => {
+              const spotifyTrack =
+                playlistItem.item ??
+                playlistItem.track;
 
-          if (!spotifyTrack) {
-            return null;
-          }
+              if (!spotifyTrack) {
+                return null;
+              }
 
-          return mapSpotifyTrack(
-            spotifyTrack
+              return mapSpotifyTrack(
+                spotifyTrack
+              );
+            }
+          )
+          .filter(
+            (
+              track
+            ): track is Track =>
+              track !== null
           );
-        })
-        .filter(
-          (track): track is Track =>
-            track !== null
-        );
 
-      setTracks(mappedTracks);
+      setTracks(
+        mappedTracks
+      );
 
       console.log(
         `${mappedTracks.length} tracks mapped from "${playlist.name}"`
@@ -323,7 +381,9 @@ function App() {
         error
       );
     } finally {
-      setIsLoadingTracks(false);
+      setIsLoadingTracks(
+        false
+      );
     }
   }
 
@@ -335,23 +395,48 @@ function App() {
       return;
     }
 
-    setIsConversionModalOpen(true);
-    setConversionStatus("running");
-    setConversionResults([]);
-    setProcessedCount(0);
-    setCurrentTrack(null);
+    setIsConversionModalOpen(
+      true
+    );
+
+    setConversionView(
+      "summary"
+    );
+
+    setConversionStatus(
+      "running"
+    );
+
+    setConversionResults(
+      []
+    );
+
+    setProcessedCount(
+      0
+    );
+
+    setCurrentTrack(
+      null
+    );
 
     const appleMusic =
       new AppleMusicClient();
 
-    const results: ConversionResult[] = [];
+    const results:
+      ConversionResult[] = [];
 
-    for (const track of tracks) {
-      setCurrentTrack(track);
+    for (
+      const track of tracks
+    ) {
+      setCurrentTrack(
+        track
+      );
 
       try {
         const candidates =
-          await appleMusic.searchTrack(track);
+          await appleMusic.searchTrack(
+            track
+          );
 
         const match =
           findBestMatch(
@@ -359,16 +444,21 @@ function App() {
             candidates
           );
 
-        const result: ConversionResult = {
-          sourceTrack: track,
-          match,
-        };
+        const result:
+          ConversionResult = {
+            sourceTrack:
+              track,
 
-        results.push(result);
+            match,
+          };
 
-        setConversionResults([
-          ...results,
-        ]);
+        results.push(
+          result
+        );
+
+        setConversionResults(
+          [...results]
+        );
 
         console.log(
           `Match: ${track.title}`,
@@ -380,24 +470,24 @@ function App() {
           error
         );
 
-        /*
-         * A temporary Apple/API failure should
-         * not abort the whole playlist.
-         */
-        const failedMatch: MatchResult = {
-          track: undefined,
-          confidence: 0,
-          status: "unmatched",
-        };
+        const failedMatch:
+          MatchResult = {
+            track: undefined,
+            confidence: 0,
+            status: "unmatched",
+          };
 
         results.push({
-          sourceTrack: track,
-          match: failedMatch,
+          sourceTrack:
+            track,
+
+          match:
+            failedMatch,
         });
 
-        setConversionResults([
-          ...results,
-        ]);
+        setConversionResults(
+          [...results]
+        );
       }
 
       setProcessedCount(
@@ -405,34 +495,51 @@ function App() {
       );
     }
 
-    setCurrentTrack(null);
-    setConversionStatus("complete");
+    setCurrentTrack(
+      null
+    );
+
+    setConversionStatus(
+      "complete"
+    );
   }
 
   function closeConversionModal() {
-    if (conversionStatus === "running") {
+    if (
+      conversionStatus ===
+      "running"
+    ) {
       return;
     }
 
-    setIsConversionModalOpen(false);
+    setIsConversionModalOpen(
+      false
+    );
+
+    setConversionView(
+      "summary"
+    );
   }
 
   const matchedCount =
     conversionResults.filter(
       (result) =>
-        result.match.status === "matched"
+        result.match.status ===
+        "matched"
     ).length;
 
   const uncertainCount =
     conversionResults.filter(
       (result) =>
-        result.match.status === "uncertain"
+        result.match.status ===
+        "uncertain"
     ).length;
 
   const unmatchedCount =
     conversionResults.filter(
       (result) =>
-        result.match.status === "unmatched"
+        result.match.status ===
+        "unmatched"
     ).length;
 
   const progress =
@@ -447,24 +554,32 @@ function App() {
   return (
     <main className="app">
       <header className="app-header">
-        <h1>PlaylistBridge</h1>
+        <h1>
+          PlaylistBridge
+        </h1>
 
         <p>
-          Transfer your playlists between
-          Spotify and Apple Music.
+          Transfer your playlists
+          between Spotify and Apple
+          Music.
         </p>
 
         {isConnected ? (
           <div className="connection-status">
             <span className="status-dot" />
+
             Connected to Spotify
           </div>
         ) : (
           <button
             className="spotify-button"
             type="button"
-            onClick={connectToSpotify}
-            disabled={isConnecting}
+            onClick={
+              connectToSpotify
+            }
+            disabled={
+              isConnecting
+            }
           >
             {isConnecting
               ? "Connecting..."
@@ -474,30 +589,39 @@ function App() {
       </header>
 
       {isConnected &&
-        playlists.length > 0 && (
+        playlists.length >
+          0 && (
           <section className="playlists-section">
             <div className="section-heading">
               <div>
                 <h2>
-                  Your Spotify playlists
+                  Your Spotify
+                  playlists
                 </h2>
 
                 <p>
-                  Choose a playlist to
-                  transfer to Apple Music.
+                  Choose a playlist
+                  to transfer to Apple
+                  Music.
                 </p>
               </div>
 
               <span className="playlist-count">
-                {playlists.length} playlists
+                {
+                  playlists.length
+                }{" "}
+                playlists
               </span>
             </div>
 
             <div className="playlist-grid">
               {playlists.map(
-                (playlist) => {
+                (
+                  playlist
+                ) => {
                   const image =
-                    playlist.images?.[0];
+                    playlist
+                      .images?.[0];
 
                   const trackCount =
                     getPlaylistTrackCount(
@@ -507,7 +631,9 @@ function App() {
                   return (
                     <article
                       className="playlist-card"
-                      key={playlist.id}
+                      key={
+                        playlist.id
+                      }
                       onClick={() =>
                         void handlePlaylistClick(
                           playlist
@@ -517,7 +643,9 @@ function App() {
                       <div className="playlist-cover">
                         {image ? (
                           <img
-                            src={image.url}
+                            src={
+                              image.url
+                            }
                             alt=""
                           />
                         ) : (
@@ -533,12 +661,17 @@ function App() {
                             playlist.name
                           }
                         >
-                          {playlist.name}
+                          {
+                            playlist.name
+                          }
                         </h3>
 
                         <p>
-                          {trackCount}{" "}
-                          {trackCount === 1
+                          {
+                            trackCount
+                          }{" "}
+                          {trackCount ===
+                          1
                             ? "track"
                             : "tracks"}
                         </p>
@@ -554,21 +687,26 @@ function App() {
       {selectedPlaylist && (
         <section className="selected-playlist">
           <h2>
-            {selectedPlaylist.name}
+            {
+              selectedPlaylist.name
+            }
           </h2>
 
           {isLoadingTracks ? (
             <p>
-              Loading all tracks...
+              Loading all
+              tracks...
             </p>
           ) : (
             <>
               <p>
-                {tracks.length} tracks ready
-                for conversion.
+                {tracks.length}{" "}
+                tracks ready for
+                conversion.
               </p>
 
-              {tracks.length > 0 && (
+              {tracks.length >
+                0 && (
                 <button
                   className="spotify-button"
                   type="button"
@@ -576,7 +714,8 @@ function App() {
                     void startConversionAnalysis()
                   }
                 >
-                  Convert to Apple Music
+                  Convert to Apple
+                  Music
                 </button>
               )}
             </>
@@ -590,7 +729,12 @@ function App() {
           role="presentation"
         >
           <section
-            className="conversion-modal"
+            className={`conversion-modal ${
+              conversionView ===
+              "review"
+                ? "conversion-modal-review"
+                : ""
+            }`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="conversion-title"
@@ -598,14 +742,18 @@ function App() {
             <div className="conversion-modal-header">
               <div>
                 <span className="conversion-eyebrow">
-                  Spotify → Apple Music
+                  Spotify → Apple
+                  Music
                 </span>
 
                 <h2 id="conversion-title">
-                  {conversionStatus ===
-                  "complete"
-                    ? "Conversion analysis complete"
-                    : "Converting to Apple Music"}
+                  {conversionView ===
+                  "review"
+                    ? "Review conversion"
+                    : conversionStatus ===
+                        "complete"
+                      ? "Conversion analysis complete"
+                      : "Converting to Apple Music"}
                 </h2>
               </div>
 
@@ -625,139 +773,327 @@ function App() {
               </button>
             </div>
 
-            <div className="conversion-playlist">
-              <strong>
-                {selectedPlaylist?.name}
-              </strong>
+            {conversionView ===
+            "summary" ? (
+              <>
+                <div className="conversion-playlist">
+                  <strong>
+                    {
+                      selectedPlaylist?.name
+                    }
+                  </strong>
 
-              <span>
-                {tracks.length} tracks
-              </span>
-            </div>
-
-            <div className="conversion-progress-row">
-              <span>
-                {processedCount} /{" "}
-                {tracks.length}
-              </span>
-
-              <strong>
-                {progress}%
-              </strong>
-            </div>
-
-            <div className="conversion-progress">
-              <div
-                className="conversion-progress-bar"
-                style={{
-                  width: `${progress}%`,
-                }}
-              />
-            </div>
-
-            {conversionStatus ===
-              "running" &&
-              currentTrack && (
-                <div className="conversion-current">
                   <span>
-                    Searching Apple Music
+                    {
+                      tracks.length
+                    }{" "}
+                    tracks
+                  </span>
+                </div>
+
+                <div className="conversion-progress-row">
+                  <span>
+                    {
+                      processedCount
+                    }{" "}
+                    /{" "}
+                    {
+                      tracks.length
+                    }
                   </span>
 
                   <strong>
-                    {currentTrack.title}
+                    {progress}%
                   </strong>
-
-                  <p>
-                    {currentTrack.artists.join(
-                      ", "
-                    )}
-                  </p>
                 </div>
-              )}
 
-            {conversionStatus ===
-              "complete" && (
-              <div className="conversion-complete">
-                <strong>
-                  {matchedCount} /{" "}
-                  {tracks.length}
-                </strong>
+                <div className="conversion-progress">
+                  <div
+                    className="conversion-progress-bar"
+                    style={{
+                      width: `${progress}%`,
+                    }}
+                  />
+                </div>
 
-                <span>
-                  tracks matched
-                </span>
-              </div>
-            )}
+                {conversionStatus ===
+                  "running" &&
+                  currentTrack && (
+                    <div className="conversion-current">
+                      <span>
+                        Searching
+                        Apple Music
+                      </span>
 
-            <div className="conversion-stats">
-              <div className="conversion-stat">
-                <span className="conversion-stat-icon matched">
-                  ✓
-                </span>
+                      <strong>
+                        {
+                          currentTrack.title
+                        }
+                      </strong>
 
-                <strong>
-                  {matchedCount}
-                </strong>
+                      <p>
+                        {currentTrack.artists.join(
+                          ", "
+                        )}
+                      </p>
+                    </div>
+                  )}
 
-                <span>
-                  Matched
-                </span>
-              </div>
+                {conversionStatus ===
+                  "complete" && (
+                  <div className="conversion-complete">
+                    <strong>
+                      {
+                        matchedCount
+                      }{" "}
+                      /{" "}
+                      {
+                        tracks.length
+                      }
+                    </strong>
 
-              <div className="conversion-stat">
-                <span className="conversion-stat-icon uncertain">
-                  ?
-                </span>
+                    <span>
+                      tracks
+                      matched
+                    </span>
+                  </div>
+                )}
 
-                <strong>
-                  {uncertainCount}
-                </strong>
+                <div className="conversion-stats">
+                  <div className="conversion-stat">
+                    <span className="conversion-stat-icon matched">
+                      ✓
+                    </span>
 
-                <span>
-                  Uncertain
-                </span>
-              </div>
+                    <strong>
+                      {
+                        matchedCount
+                      }
+                    </strong>
 
-              <div className="conversion-stat">
-                <span className="conversion-stat-icon unmatched">
-                  ×
-                </span>
+                    <span>
+                      Matched
+                    </span>
+                  </div>
 
-                <strong>
-                  {unmatchedCount}
-                </strong>
+                  <div className="conversion-stat">
+                    <span className="conversion-stat-icon uncertain">
+                      ?
+                    </span>
 
-                <span>
-                  Not found
-                </span>
-              </div>
-            </div>
+                    <strong>
+                      {
+                        uncertainCount
+                      }
+                    </strong>
 
-            {conversionStatus ===
-              "complete" && (
-              <div className="conversion-actions">
-                <button
-                  className="conversion-secondary-button"
-                  type="button"
-                  onClick={
-                    closeConversionModal
-                  }
-                >
-                  Close
-                </button>
+                    <span>
+                      Uncertain
+                    </span>
+                  </div>
 
-                <button
-                  className="spotify-button"
-                  type="button"
-                  onClick={() => {
-                    console.log(
-                      "Conversion results:",
-                      conversionResults
-                    );
-                  }}
-                >
-                  Review results
-                </button>
+                  <div className="conversion-stat">
+                    <span className="conversion-stat-icon unmatched">
+                      ×
+                    </span>
+
+                    <strong>
+                      {
+                        unmatchedCount
+                      }
+                    </strong>
+
+                    <span>
+                      Not found
+                    </span>
+                  </div>
+                </div>
+
+                {conversionStatus ===
+                  "complete" && (
+                  <div className="conversion-actions">
+                    <button
+                      className="conversion-secondary-button"
+                      type="button"
+                      onClick={
+                        closeConversionModal
+                      }
+                    >
+                      Close
+                    </button>
+
+                    <button
+                      className="spotify-button"
+                      type="button"
+                      onClick={() =>
+                        setConversionView(
+                          "review"
+                        )
+                      }
+                    >
+                      Review results
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="conversion-review">
+                <div className="conversion-review-summary">
+                  <span>
+                    {
+                      conversionResults.length
+                    }{" "}
+                    tracks analysed
+                  </span>
+
+                  <strong>
+                    {
+                      matchedCount
+                    }{" "}
+                    matched
+                  </strong>
+                </div>
+
+                <div className="conversion-review-list">
+                  {conversionResults.map(
+                    (
+                      {
+                        sourceTrack,
+                        match,
+                      },
+                      index
+                    ) => {
+                      const isMatched =
+                        match.status ===
+                        "matched";
+
+                      const isUncertain =
+                        match.status ===
+                        "uncertain";
+
+                      const statusLabel =
+                        isMatched
+                          ? "Matched"
+                          : isUncertain
+                            ? "Check"
+                            : "Not found";
+
+                      const statusSymbol =
+                        isMatched
+                          ? "✓"
+                          : isUncertain
+                            ? "?"
+                            : "×";
+
+                      return (
+                        <article
+                          className={`conversion-review-item ${match.status}`}
+                          key={`${sourceTrack.id}-${index}`}
+                        >
+                          <div
+                            className={`conversion-review-status ${match.status}`}
+                          >
+                            {
+                              statusSymbol
+                            }
+                          </div>
+
+                          <div className="conversion-review-track">
+                            <strong>
+                              {
+                                sourceTrack.title
+                              }
+                            </strong>
+
+                            <span>
+                              {sourceTrack.artists.join(
+                                ", "
+                              )}
+                            </span>
+
+                            {match.track ? (
+                              <div className="conversion-review-match">
+                                <span>
+                                  Apple
+                                  Music
+                                </span>
+
+                                <p>
+                                  {
+                                    match
+                                      .track
+                                      .title
+                                  }
+                                  {" — "}
+                                  {match.track.artists.join(
+                                    ", "
+                                  )}
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="conversion-review-match">
+                                <span>
+                                  Apple
+                                  Music
+                                </span>
+
+                                <p>
+                                  No
+                                  reliable
+                                  match
+                                  found
+                                </p>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="conversion-review-score">
+                            <strong>
+                              {Math.round(
+                                match.confidence *
+                                  100
+                              )}
+                              %
+                            </strong>
+
+                            <span>
+                              {
+                                statusLabel
+                              }
+                            </span>
+                          </div>
+                        </article>
+                      );
+                    }
+                  )}
+                </div>
+
+                <div className="conversion-actions">
+                  <button
+                    className="conversion-secondary-button"
+                    type="button"
+                    onClick={() =>
+                      setConversionView(
+                        "summary"
+                      )
+                    }
+                  >
+                    Back
+                  </button>
+
+                  <button
+                    className="spotify-button"
+                    type="button"
+                    onClick={() => {
+                      console.log(
+                        "Ready for Apple Music creation:",
+                        conversionResults
+                      );
+                    }}
+                  >
+                    Continue
+                  </button>
+                </div>
               </div>
             )}
           </section>
