@@ -1,9 +1,3 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-
 import "./App.css";
 
 import SpotifyLibrary from "./components/SpotifyLibrary/SpotifyLibrary";
@@ -15,72 +9,29 @@ import {
 } from "./hooks/usePlaylistConversion";
 
 import {
-  createSpotifyAuthorizationUrl,
-  exchangeSpotifyCode,
-  generateCodeChallenge,
-  generateCodeVerifier,
-  mapSpotifyTrack,
-  SpotifyClient,
-} from "../../../packages/spotify/src";
+  useSpotifyAuth,
+} from "./hooks/useSpotifyAuth";
 
-import type {
-  SpotifyPlaylistSummary,
-} from "../../../packages/spotify/src";
-
-import type {
-  Track,
-} from "../../../packages/core/src";
-
-const spotifyClientId =
-  import.meta.env
-    .VITE_SPOTIFY_CLIENT_ID;
-
-const spotifyRedirectUri =
-  import.meta.env
-    .VITE_SPOTIFY_REDIRECT_URI;
+import {
+  useSpotifyPlaylist,
+} from "./hooks/useSpotifyPlaylist";
 
 function App() {
-  const [
+  const {
     isConnecting,
-    setIsConnecting,
-  ] = useState(false);
-
-  const [
     isConnected,
-    setIsConnected,
-  ] = useState(false);
-
-  const [
     playlists,
-    setPlaylists,
-  ] = useState<
-    SpotifyPlaylistSummary[]
-  >([]);
-
-  const [
-    selectedPlaylist,
-    setSelectedPlaylist,
-  ] =
-    useState<SpotifyPlaylistSummary | null>(
-      null
-    );
-
-  const [
-    tracks,
-    setTracks,
-  ] = useState<Track[]>([]);
-
-  const [
-    isLoadingTracks,
-    setIsLoadingTracks,
-  ] = useState(false);
-
-  const [
     spotifyUserId,
-    setSpotifyUserId,
-  ] = useState<string | null>(
-    null
-  );
+    connectToSpotify,
+  } = useSpotifyAuth();
+
+  const {
+    selectedPlaylist,
+    tracks,
+    isLoadingTracks,
+    selectPlaylist,
+    clearSelectedPlaylist,
+  } = useSpotifyPlaylist();
 
   const {
     isConversionModalOpen,
@@ -114,285 +65,6 @@ function App() {
     tracks,
     selectedPlaylist,
   });
-
-  const callbackHandled =
-    useRef(false);
-
-  useEffect(() => {
-    async function handleSpotifyCallback() {
-      if (
-        callbackHandled.current
-      ) {
-        return;
-      }
-
-      const params =
-        new URLSearchParams(
-          window.location.search
-        );
-
-      const code =
-        params.get("code");
-
-      const error =
-        params.get("error");
-
-      if (error) {
-        console.error(
-          "Spotify authorization failed:",
-          error
-        );
-
-        return;
-      }
-
-      if (!code) {
-        return;
-      }
-
-      callbackHandled.current =
-        true;
-
-      const codeVerifier =
-        sessionStorage.getItem(
-          "spotify_code_verifier"
-        );
-
-      if (!codeVerifier) {
-        console.error(
-          "Missing Spotify PKCE code verifier."
-        );
-
-        return;
-      }
-
-      if (
-        !spotifyClientId ||
-        !spotifyRedirectUri
-      ) {
-        console.error(
-          "Missing Spotify environment configuration."
-        );
-
-        return;
-      }
-
-      try {
-        const token =
-          await exchangeSpotifyCode(
-            {
-              clientId:
-                spotifyClientId,
-
-              code,
-
-              redirectUri:
-                spotifyRedirectUri,
-
-              codeVerifier,
-            }
-          );
-
-        const spotify =
-          new SpotifyClient(
-            token.access_token
-          );
-
-        const user =
-          await spotify.getCurrentUser();
-
-        console.log(
-          "Connected Spotify user:",
-          user.display_name ??
-            user.id
-        );
-
-        setSpotifyUserId(
-          user.id
-        );
-
-        const userPlaylists =
-          await spotify.getAllCurrentUserPlaylists();
-
-        setPlaylists(
-          userPlaylists
-        );
-
-        sessionStorage.removeItem(
-          "spotify_code_verifier"
-        );
-
-        sessionStorage.setItem(
-          "spotify_access_token",
-          token.access_token
-        );
-
-        setIsConnected(
-          true
-        );
-
-        window.history.replaceState(
-          {},
-          document.title,
-          window.location.pathname
-        );
-      } catch (error) {
-        console.error(
-          "Spotify authentication failed:",
-          error
-        );
-      }
-    }
-
-    void handleSpotifyCallback();
-  }, []);
-
-  async function connectToSpotify() {
-    if (
-      !spotifyClientId ||
-      !spotifyRedirectUri
-    ) {
-      console.error(
-        "Missing Spotify environment configuration."
-      );
-
-      return;
-    }
-
-    setIsConnecting(
-      true
-    );
-
-    try {
-      const codeVerifier =
-        generateCodeVerifier();
-
-      const codeChallenge =
-        await generateCodeChallenge(
-          codeVerifier
-        );
-
-      sessionStorage.setItem(
-        "spotify_code_verifier",
-        codeVerifier
-      );
-
-      const authorizationUrl =
-        createSpotifyAuthorizationUrl(
-          {
-            clientId:
-              spotifyClientId,
-
-            redirectUri:
-              spotifyRedirectUri,
-
-            codeChallenge,
-          }
-        );
-
-      window.location.assign(
-        authorizationUrl
-      );
-    } catch (error) {
-      console.error(
-        "Failed to start Spotify authentication:",
-        error
-      );
-
-      setIsConnecting(
-        false
-      );
-    }
-  }
-
-  async function handlePlaylistClick(
-    playlist:
-      SpotifyPlaylistSummary
-  ) {
-    const accessToken =
-      sessionStorage.getItem(
-        "spotify_access_token"
-      );
-
-    if (!accessToken) {
-      console.error(
-        "Missing Spotify access token."
-      );
-
-      return;
-    }
-
-    setSelectedPlaylist(
-      playlist
-    );
-
-    setTracks([]);
-
-    setIsLoadingTracks(
-      true
-    );
-
-    try {
-      const spotify =
-        new SpotifyClient(
-          accessToken
-        );
-
-      const items =
-        await spotify.getAllPlaylistItems(
-          playlist.id
-        );
-
-      const mappedTracks =
-        items
-          .map(
-            (
-              playlistItem
-            ) => {
-              const spotifyTrack =
-                playlistItem.item ??
-                playlistItem.track;
-
-              if (
-                !spotifyTrack
-              ) {
-                return null;
-              }
-
-              return mapSpotifyTrack(
-                spotifyTrack
-              );
-            }
-          )
-          .filter(
-            (
-              track
-            ): track is Track =>
-              track !== null
-          );
-
-      setTracks(
-        mappedTracks
-      );
-    } catch (error) {
-      console.error(
-        "Failed to load Spotify playlist:",
-        error
-      );
-    } finally {
-      setIsLoadingTracks(
-        false
-      );
-    }
-  }
-
-  function handleBackToLibrary() {
-    setSelectedPlaylist(
-      null
-    );
-
-    setTracks([]);
-  }
 
   return (
     <main className="app">
@@ -444,7 +116,7 @@ function App() {
               spotifyUserId
             }
             onSelectPlaylist={
-              handlePlaylistClick
+              selectPlaylist
             }
           />
         )}
@@ -461,7 +133,7 @@ function App() {
             isLoadingTracks
           }
           onBack={
-            handleBackToLibrary
+            clearSelectedPlaylist
           }
           onTransfer={() =>
             void startConversionAnalysis()
