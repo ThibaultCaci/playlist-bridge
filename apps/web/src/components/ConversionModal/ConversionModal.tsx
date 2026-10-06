@@ -1,3 +1,7 @@
+import {
+  useState,
+} from "react";
+
 import type {
   MatchResult,
   Track,
@@ -18,6 +22,12 @@ type ConversionView =
 type ReviewDecision =
   | "accepted"
   | "ignored";
+
+type ReviewFilter =
+  | "all"
+  | "review"
+  | "ready"
+  | "not-found";
 
 interface ConversionResult {
   sourceTrack: Track;
@@ -81,9 +91,60 @@ function ConversionModal({
   onIgnoreUncertainMatch,
   onResetUncertainMatch,
 }: ConversionModalProps) {
+  const [
+    reviewFilter,
+    setReviewFilter,
+  ] = useState<ReviewFilter>(
+    "all"
+  );
+
   if (!isOpen) {
     return null;
   }
+
+  const readyResults =
+    conversionResults.filter(
+      (result) =>
+        result.match.status ===
+          "matched" ||
+        (
+          result.match.status ===
+            "uncertain" &&
+          result.reviewDecision ===
+            "accepted"
+        )
+    );
+
+  const reviewResults =
+    conversionResults.filter(
+      (result) =>
+        result.match.status ===
+          "uncertain" &&
+        !result.reviewDecision
+    );
+
+  const notFoundResults =
+    conversionResults.filter(
+      (result) =>
+        result.match.status ===
+          "unmatched" ||
+        (
+          result.match.status ===
+            "uncertain" &&
+          result.reviewDecision ===
+            "ignored"
+        )
+    );
+
+  const filteredResults =
+    reviewFilter === "ready"
+      ? readyResults
+      : reviewFilter === "review"
+        ? reviewResults
+        : reviewFilter ===
+            "not-found"
+          ? notFoundResults
+          : conversionResults;
 
   return (
     <div
@@ -111,7 +172,8 @@ function ConversionModal({
                 ? "Review conversion"
                 : conversionView === "success"
                   ? "Transfer complete"
-                  : conversionStatus === "complete"
+                  : conversionStatus ===
+                      "complete"
                     ? "Conversion analysis complete"
                     : "Converting to Apple Music"}
             </h2>
@@ -137,6 +199,7 @@ function ConversionModal({
           <>
             <div className="conversion-complete">
               <strong>✓</strong>
+
               <span>
                 Playlist created in
                 Apple Music
@@ -362,202 +425,290 @@ function ConversionModal({
               </strong>
             </div>
 
-            <div className="conversion-review-list">
-              {conversionResults.map(
-                (
-                  {
-                    sourceTrack,
-                    match,
-                    reviewDecision,
-                  },
-                  index
-                ) => {
-                  const isMatched =
-                    match.status ===
-                    "matched";
-
-                  const isUncertain =
-                    match.status ===
-                    "uncertain";
-
-                  const isAccepted =
-                    isUncertain &&
-                    reviewDecision ===
-                      "accepted";
-
-                  const isIgnored =
-                    isUncertain &&
-                    reviewDecision ===
-                      "ignored";
-
-                  const displayStatus =
-                    isAccepted
-                      ? "matched"
-                      : isIgnored
-                        ? "unmatched"
-                        : match.status;
-
-                  const statusLabel =
-                    isMatched
-                      ? "Matched"
-                      : isAccepted
-                        ? "Accepted"
-                        : isIgnored
-                          ? "Ignored"
-                          : isUncertain
-                            ? "Check"
-                            : "Not found";
-
-                  const statusSymbol =
-                    isMatched ||
-                    isAccepted
-                      ? "✓"
-                      : isIgnored ||
-                          match.status ===
-                            "unmatched"
-                        ? "×"
-                        : "?";
-
-                  return (
-                    <article
-                      className={`conversion-review-item ${displayStatus}`}
-                      key={`${sourceTrack.id}-${index}`}
-                    >
-                      <div
-                        className={`conversion-review-status ${displayStatus}`}
-                      >
-                        {
-                          statusSymbol
-                        }
-                      </div>
-
-                      <div className="conversion-review-track">
-                        <strong>
-                          {
-                            sourceTrack.title
-                          }
-                        </strong>
-
-                        <span>
-                          {sourceTrack.artists.join(
-                            ", "
-                          )}
-                        </span>
-
-                        {match.track ? (
-                          <div className="conversion-review-match">
-                            <span>
-                              Apple Music
-                            </span>
-
-                            <p>
-                              {
-                                match
-                                  .track
-                                  .title
-                              }
-                              {" — "}
-                              {match.track.artists.join(
-                                ", "
-                              )}
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="conversion-review-match">
-                            <span>
-                              Apple Music
-                            </span>
-
-                            <p>
-                              No reliable
-                              match found
-                            </p>
-                          </div>
-                        )}
-
-                        {isUncertain && (
-                          <div className="conversion-review-actions">
-                            {!reviewDecision ? (
-                              <>
-                                <button
-                                  type="button"
-                                  className="conversion-review-accept"
-                                  onClick={() =>
-                                    onAcceptUncertainMatch(
-                                      sourceTrack.id
-                                    )
-                                  }
-                                >
-                                  Accept
-                                </button>
-
-                                <button
-                                  type="button"
-                                  className="conversion-review-ignore"
-                                  onClick={() =>
-                                    onIgnoreUncertainMatch(
-                                      sourceTrack.id
-                                    )
-                                  }
-                                >
-                                  Ignore
-                                </button>
-                              </>
-                            ) : (
-                              <button
-                                type="button"
-                                className="conversion-review-reset"
-                                onClick={() =>
-                                  onResetUncertainMatch(
-                                    sourceTrack.id
-                                  )
-                                }
-                              >
-                                Undo decision
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="conversion-review-score">
-                        <strong>
-                          {Math.round(
-                            match.confidence *
-                              100
-                          )}
-                          %
-                        </strong>
-
-                        <span>
-                          {
-                            statusLabel
-                          }
-                        </span>
-                      </div>
-                    </article>
-                  );
+            <div className="conversion-review-filters">
+              <button
+                className={
+                  reviewFilter === "all"
+                    ? "active"
+                    : ""
                 }
+                type="button"
+                onClick={() =>
+                  setReviewFilter(
+                    "all"
+                  )
+                }
+              >
+                All
+                <span>
+                  {
+                    conversionResults.length
+                  }
+                </span>
+              </button>
+
+              <button
+                className={
+                  reviewFilter ===
+                  "review"
+                    ? "active review"
+                    : "review"
+                }
+                type="button"
+                onClick={() =>
+                  setReviewFilter(
+                    "review"
+                  )
+                }
+              >
+                To review
+                <span>
+                  {
+                    reviewResults.length
+                  }
+                </span>
+              </button>
+
+              <button
+                className={
+                  reviewFilter ===
+                  "ready"
+                    ? "active ready"
+                    : "ready"
+                }
+                type="button"
+                onClick={() =>
+                  setReviewFilter(
+                    "ready"
+                  )
+                }
+              >
+                Ready
+                <span>
+                  {
+                    readyResults.length
+                  }
+                </span>
+              </button>
+
+              <button
+                className={
+                  reviewFilter ===
+                  "not-found"
+                    ? "active not-found"
+                    : "not-found"
+                }
+                type="button"
+                onClick={() =>
+                  setReviewFilter(
+                    "not-found"
+                  )
+                }
+              >
+                Not found
+                <span>
+                  {
+                    notFoundResults.length
+                  }
+                </span>
+              </button>
+            </div>
+
+            <div className="conversion-review-list">
+              {filteredResults.length >
+              0 ? (
+                filteredResults.map(
+                  (
+                    {
+                      sourceTrack,
+                      match,
+                      reviewDecision,
+                    },
+                    index
+                  ) => {
+                    const isMatched =
+                      match.status ===
+                      "matched";
+
+                    const isUncertain =
+                      match.status ===
+                      "uncertain";
+
+                    const isAccepted =
+                      isUncertain &&
+                      reviewDecision ===
+                        "accepted";
+
+                    const isIgnored =
+                      isUncertain &&
+                      reviewDecision ===
+                        "ignored";
+
+                    const displayStatus =
+                      isAccepted
+                        ? "matched"
+                        : isIgnored
+                          ? "unmatched"
+                          : match.status;
+
+                    const statusLabel =
+                      isMatched
+                        ? "Matched"
+                        : isAccepted
+                          ? "Accepted"
+                          : isIgnored
+                            ? "Ignored"
+                            : isUncertain
+                              ? "Check"
+                              : "Not found";
+
+                    const statusSymbol =
+                      isMatched ||
+                      isAccepted
+                        ? "✓"
+                        : isIgnored ||
+                            match.status ===
+                              "unmatched"
+                          ? "×"
+                          : "?";
+
+                    return (
+                      <article
+                        className={`conversion-review-item ${displayStatus}`}
+                        key={`${sourceTrack.id}-${index}`}
+                      >
+                        <div
+                          className={`conversion-review-status ${displayStatus}`}
+                        >
+                          {
+                            statusSymbol
+                          }
+                        </div>
+
+                        <div className="conversion-review-track">
+                          <strong>
+                            {
+                              sourceTrack.title
+                            }
+                          </strong>
+
+                          <span>
+                            {sourceTrack.artists.join(
+                              ", "
+                            )}
+                          </span>
+
+                          {match.track ? (
+                            <div className="conversion-review-match">
+                              <span>
+                                Apple Music
+                              </span>
+
+                              <p>
+                                {
+                                  match
+                                    .track
+                                    .title
+                                }
+                                {" — "}
+                                {match.track.artists.join(
+                                  ", "
+                                )}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="conversion-review-match">
+                              <span>
+                                Apple Music
+                              </span>
+
+                              <p>
+                                No reliable
+                                match found
+                              </p>
+                            </div>
+                          )}
+
+                          {isUncertain && (
+                            <div className="conversion-review-actions">
+                              {!reviewDecision ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    className="conversion-review-accept"
+                                    onClick={() =>
+                                      onAcceptUncertainMatch(
+                                        sourceTrack.id
+                                      )
+                                    }
+                                  >
+                                    Accept
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    className="conversion-review-ignore"
+                                    onClick={() =>
+                                      onIgnoreUncertainMatch(
+                                        sourceTrack.id
+                                      )
+                                    }
+                                  >
+                                    Ignore
+                                  </button>
+                                </>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="conversion-review-reset"
+                                  onClick={() =>
+                                    onResetUncertainMatch(
+                                      sourceTrack.id
+                                    )
+                                  }
+                                >
+                                  Undo decision
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="conversion-review-score">
+                          <strong>
+                            {Math.round(
+                              match.confidence *
+                                100
+                            )}
+                            %
+                          </strong>
+
+                          <span>
+                            {
+                              statusLabel
+                            }
+                          </span>
+                        </div>
+                      </article>
+                    );
+                  }
+                )
+              ) : (
+                <div className="conversion-review-empty">
+                  <strong>
+                    Nothing here
+                  </strong>
+
+                  <span>
+                    No tracks match
+                    this filter.
+                  </span>
+                </div>
               )}
             </div>
 
             {appleMusicAuthorizationError && (
-              <div
-                style={{
-                  marginTop:
-                    "16px",
-                  padding:
-                    "12px 14px",
-                  borderRadius:
-                    "10px",
-                  background:
-                    "rgba(248, 113, 113, 0.08)",
-                  color:
-                    "#f87171",
-                  fontSize:
-                    "0.85rem",
-                }}
-              >
+              <div className="conversion-error">
                 {
                   appleMusicAuthorizationError
                 }

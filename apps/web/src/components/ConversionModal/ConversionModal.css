@@ -299,6 +299,91 @@
   color: #d4d4d8;
 }
 
+.conversion-review-filters {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  margin-bottom: 14px;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.conversion-review-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.conversion-review-filters button {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 7px;
+  padding: 7px 11px;
+  border:
+    1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background:
+    rgba(255, 255, 255, 0.025);
+  color: #71717a;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.conversion-review-filters button span {
+  display: grid;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  place-items: center;
+  background:
+    rgba(255, 255, 255, 0.06);
+  color: #a1a1aa;
+  font-size: 0.68rem;
+}
+
+.conversion-review-filters button:hover {
+  border-color:
+    rgba(255, 255, 255, 0.16);
+  color: #d4d4d8;
+}
+
+.conversion-review-filters button.active {
+  border-color:
+    rgba(255, 255, 255, 0.22);
+  background:
+    rgba(255, 255, 255, 0.08);
+  color: #f4f4f5;
+}
+
+.conversion-review-filters button.review.active {
+  border-color:
+    rgba(250, 204, 21, 0.32);
+  background:
+    rgba(250, 204, 21, 0.08);
+  color: #facc15;
+}
+
+.conversion-review-filters button.ready.active {
+  border-color:
+    rgba(30, 215, 96, 0.32);
+  background:
+    rgba(30, 215, 96, 0.08);
+  color: #1ed760;
+}
+
+.conversion-review-filters button.not-found.active {
+  border-color:
+    rgba(248, 113, 113, 0.3);
+  background:
+    rgba(248, 113, 113, 0.07);
+  color: #f87171;
+}
+
 .conversion-review-list {
   display: flex;
   overflow-y: auto;
@@ -368,8 +453,7 @@
   font-weight: 800;
   transition:
     background 180ms ease,
-    color 180ms ease,
-    transform 180ms ease;
+    color 180ms ease;
 }
 
 .conversion-review-status.matched {
@@ -546,6 +630,40 @@
   color: #e4e4e7;
 }
 
+.conversion-review-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  min-height: 180px;
+  padding: 32px;
+  border:
+    1px dashed rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  color: #71717a;
+  text-align: center;
+}
+
+.conversion-review-empty strong {
+  color: #d4d4d8;
+  font-size: 0.95rem;
+}
+
+.conversion-review-empty span {
+  margin-top: 5px;
+  font-size: 0.8rem;
+}
+
+.conversion-error {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background:
+    rgba(248, 113, 113, 0.08);
+  color: #f87171;
+  font-size: 0.85rem;
+}
+
 @media (max-width: 600px) {
   .conversion-overlay {
     padding: 14px;
@@ -574,6 +692,10 @@
     align-items: flex-start;
     flex-direction: column;
     gap: 5px;
+  }
+
+  .conversion-review-filters {
+    margin-right: -6px;
   }
 
   .conversion-review-list {
