@@ -61,6 +61,10 @@ function App() {
     startConversionAnalysis,
     continueToAppleMusic,
     closeConversionModal,
+
+    acceptUncertainMatch,
+    ignoreUncertainMatch,
+    resetUncertainMatch,
   } = usePlaylistConversion({
     tracks,
     selectedPlaylist,
@@ -196,6 +200,15 @@ function App() {
         }
         onContinueToAppleMusic={
           continueToAppleMusic
+        }
+        onAcceptUncertainMatch={
+          acceptUncertainMatch
+        }
+        onIgnoreUncertainMatch={
+          ignoreUncertainMatch
+        }
+        onResetUncertainMatch={
+          resetUncertainMatch
         }
       />
     </main>

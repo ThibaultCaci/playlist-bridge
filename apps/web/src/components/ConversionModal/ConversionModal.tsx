@@ -15,50 +15,47 @@ type ConversionView =
   | "review"
   | "success";
 
+type ReviewDecision =
+  | "accepted"
+  | "ignored";
+
 interface ConversionResult {
   sourceTrack: Track;
   match: MatchResult;
+  reviewDecision?: ReviewDecision;
 }
 
 interface ConversionModalProps {
   isOpen: boolean;
-
   playlistName: string;
-
   trackCount: number;
-
   conversionStatus: ConversionStatus;
-
   conversionView: ConversionView;
-
   conversionResults: ConversionResult[];
-
   currentTrack: Track | null;
-
   processedCount: number;
-
   progress: number;
-
   matchedCount: number;
-
   uncertainCount: number;
-
   unmatchedCount: number;
-
   createdTrackCount: number;
-
   isAuthorizingAppleMusic: boolean;
-
   appleMusicAuthorizationError: string | null;
-
   onClose: () => void;
-
   onViewChange: (
     view: ConversionView
   ) => void;
-
-  onContinueToAppleMusic: () =>
-    void | Promise<void>;
+  onContinueToAppleMusic:
+    () => void | Promise<void>;
+  onAcceptUncertainMatch: (
+    sourceTrackId: string
+  ) => void;
+  onIgnoreUncertainMatch: (
+    sourceTrackId: string
+  ) => void;
+  onResetUncertainMatch: (
+    sourceTrackId: string
+  ) => void;
 }
 
 function ConversionModal({
@@ -80,6 +77,9 @@ function ConversionModal({
   onClose,
   onViewChange,
   onContinueToAppleMusic,
+  onAcceptUncertainMatch,
+  onIgnoreUncertainMatch,
+  onResetUncertainMatch,
 }: ConversionModalProps) {
   if (!isOpen) {
     return null;
@@ -111,8 +111,7 @@ function ConversionModal({
                 ? "Review conversion"
                 : conversionView === "success"
                   ? "Transfer complete"
-                  : conversionStatus ===
-                      "complete"
+                  : conversionStatus === "complete"
                     ? "Conversion analysis complete"
                     : "Converting to Apple Music"}
             </h2>
@@ -137,10 +136,7 @@ function ConversionModal({
         "success" ? (
           <>
             <div className="conversion-complete">
-              <strong>
-                ✓
-              </strong>
-
+              <strong>✓</strong>
               <span>
                 Playlist created in
                 Apple Music
@@ -270,17 +266,17 @@ function ConversionModal({
 
             {conversionStatus ===
               "complete" && (
-              <div className="conversion-complete">
-                <strong>
-                  {matchedCount} /{" "}
-                  {trackCount}
-                </strong>
+                <div className="conversion-complete">
+                  <strong>
+                    {matchedCount} /{" "}
+                    {trackCount}
+                  </strong>
 
-                <span>
-                  tracks matched
-                </span>
-              </div>
-            )}
+                  <span>
+                    tracks ready
+                  </span>
+                </div>
+              )}
 
             <div className="conversion-stats">
               <div className="conversion-stat">
@@ -293,7 +289,7 @@ function ConversionModal({
                 </strong>
 
                 <span>
-                  Matched
+                  Ready
                 </span>
               </div>
 
@@ -307,7 +303,7 @@ function ConversionModal({
                 </strong>
 
                 <span>
-                  Uncertain
+                  To review
                 </span>
               </div>
 
@@ -328,28 +324,28 @@ function ConversionModal({
 
             {conversionStatus ===
               "complete" && (
-              <div className="conversion-actions">
-                <button
-                  className="conversion-secondary-button"
-                  type="button"
-                  onClick={onClose}
-                >
-                  Close
-                </button>
+                <div className="conversion-actions">
+                  <button
+                    className="conversion-secondary-button"
+                    type="button"
+                    onClick={onClose}
+                  >
+                    Close
+                  </button>
 
-                <button
-                  className="spotify-button"
-                  type="button"
-                  onClick={() =>
-                    onViewChange(
-                      "review"
-                    )
-                  }
-                >
-                  Review results
-                </button>
-              </div>
-            )}
+                  <button
+                    className="spotify-button"
+                    type="button"
+                    onClick={() =>
+                      onViewChange(
+                        "review"
+                      )
+                    }
+                  >
+                    Review results
+                  </button>
+                </div>
+              )}
           </>
         ) : (
           <div className="conversion-review">
@@ -362,7 +358,7 @@ function ConversionModal({
               </span>
 
               <strong>
-                {matchedCount} matched
+                {matchedCount} ready
               </strong>
             </div>
 
@@ -372,6 +368,7 @@ function ConversionModal({
                   {
                     sourceTrack,
                     match,
+                    reviewDecision,
                   },
                   index
                 ) => {
@@ -383,27 +380,51 @@ function ConversionModal({
                     match.status ===
                     "uncertain";
 
+                  const isAccepted =
+                    isUncertain &&
+                    reviewDecision ===
+                      "accepted";
+
+                  const isIgnored =
+                    isUncertain &&
+                    reviewDecision ===
+                      "ignored";
+
+                  const displayStatus =
+                    isAccepted
+                      ? "matched"
+                      : isIgnored
+                        ? "unmatched"
+                        : match.status;
+
                   const statusLabel =
                     isMatched
                       ? "Matched"
-                      : isUncertain
-                        ? "Check"
-                        : "Not found";
+                      : isAccepted
+                        ? "Accepted"
+                        : isIgnored
+                          ? "Ignored"
+                          : isUncertain
+                            ? "Check"
+                            : "Not found";
 
                   const statusSymbol =
-                    isMatched
+                    isMatched ||
+                    isAccepted
                       ? "✓"
-                      : isUncertain
-                        ? "?"
-                        : "×";
+                      : isIgnored ||
+                          match.status ===
+                            "unmatched"
+                        ? "×"
+                        : "?";
 
                   return (
                     <article
-                      className={`conversion-review-item ${match.status}`}
+                      className={`conversion-review-item ${displayStatus}`}
                       key={`${sourceTrack.id}-${index}`}
                     >
                       <div
-                        className={`conversion-review-status ${match.status}`}
+                        className={`conversion-review-status ${displayStatus}`}
                       >
                         {
                           statusSymbol
@@ -453,6 +474,50 @@ function ConversionModal({
                             </p>
                           </div>
                         )}
+
+                        {isUncertain && (
+                          <div className="conversion-review-actions">
+                            {!reviewDecision ? (
+                              <>
+                                <button
+                                  type="button"
+                                  className="conversion-review-accept"
+                                  onClick={() =>
+                                    onAcceptUncertainMatch(
+                                      sourceTrack.id
+                                    )
+                                  }
+                                >
+                                  Accept
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="conversion-review-ignore"
+                                  onClick={() =>
+                                    onIgnoreUncertainMatch(
+                                      sourceTrack.id
+                                    )
+                                  }
+                                >
+                                  Ignore
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                type="button"
+                                className="conversion-review-reset"
+                                onClick={() =>
+                                  onResetUncertainMatch(
+                                    sourceTrack.id
+                                  )
+                                }
+                              >
+                                Undo decision
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       <div className="conversion-review-score">
@@ -481,19 +546,14 @@ function ConversionModal({
                 style={{
                   marginTop:
                     "16px",
-
                   padding:
                     "12px 14px",
-
                   borderRadius:
                     "10px",
-
                   background:
                     "rgba(248, 113, 113, 0.08)",
-
                   color:
                     "#f87171",
-
                   fontSize:
                     "0.85rem",
                 }}

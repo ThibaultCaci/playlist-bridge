@@ -27,6 +27,7 @@ import {
 export interface ConversionResult {
   sourceTrack: Track;
   match: MatchResult;
+  reviewDecision?: "accepted" | "ignored";
 }
 
 export type ConversionStatus =
@@ -107,14 +108,30 @@ export function usePlaylistConversion({
     conversionResults.filter(
       (result) =>
         result.match.status ===
-        "matched"
+          "matched" ||
+        (
+          result.match.status ===
+            "uncertain" &&
+          result.reviewDecision ===
+            "accepted"
+        )
     ).length;
 
   const uncertainCount =
     conversionResults.filter(
       (result) =>
         result.match.status ===
-        "uncertain"
+          "uncertain" &&
+        !result.reviewDecision
+    ).length;
+
+  const ignoredCount =
+    conversionResults.filter(
+      (result) =>
+        result.match.status ===
+          "uncertain" &&
+        result.reviewDecision ===
+          "ignored"
     ).length;
 
   const unmatchedCount =
@@ -132,6 +149,87 @@ export function usePlaylistConversion({
             100
         )
       : 0;
+
+  function acceptUncertainMatch(
+    sourceTrackId: string
+  ) {
+    setConversionResults(
+      (results) =>
+        results.map(
+          (result) => {
+            if (
+              result.sourceTrack.id !==
+                sourceTrackId ||
+              result.match.status !==
+                "uncertain"
+            ) {
+              return result;
+            }
+
+            return {
+              ...result,
+              reviewDecision:
+                "accepted",
+            };
+          }
+        )
+    );
+  }
+
+  function ignoreUncertainMatch(
+    sourceTrackId: string
+  ) {
+    setConversionResults(
+      (results) =>
+        results.map(
+          (result) => {
+            if (
+              result.sourceTrack.id !==
+                sourceTrackId ||
+              result.match.status !==
+                "uncertain"
+            ) {
+              return result;
+            }
+
+            return {
+              ...result,
+              reviewDecision:
+                "ignored",
+            };
+          }
+        )
+    );
+  }
+
+  function resetUncertainMatch(
+    sourceTrackId: string
+  ) {
+    setConversionResults(
+      (results) =>
+        results.map(
+          (result) => {
+            if (
+              result.sourceTrack.id !==
+                sourceTrackId ||
+              result.match.status !==
+                "uncertain"
+            ) {
+              return result;
+            }
+
+            const {
+              reviewDecision,
+              ...rest
+            } = result;
+
+            void reviewDecision;
+
+            return rest;
+          }
+        )
+    );
+  }
 
   async function startConversionAnalysis() {
     if (
@@ -274,30 +372,24 @@ export function usePlaylistConversion({
       } =
         await authorizeAppleMusic();
 
-      /*
-       * Only transfer confident
-       * matches automatically.
-       *
-       * Uncertain and unmatched
-       * tracks remain visible in
-       * the review screen.
-       */
       const appleTrackIds =
         conversionResults
           .filter(
-            (
-              result
-            ) =>
-              result.match
-                .status ===
-                "matched" &&
-              result.match
-                .track
+            (result) =>
+              result.match.track &&
+              (
+                result.match.status ===
+                  "matched" ||
+                (
+                  result.match.status ===
+                    "uncertain" &&
+                  result.reviewDecision ===
+                    "accepted"
+                )
+              )
           )
           .map(
-            (
-              result
-            ) =>
+            (result) =>
               result.match
                 .track!.id
           );
@@ -307,7 +399,7 @@ export function usePlaylistConversion({
         0
       ) {
         throw new Error(
-          "No confidently matched tracks are available to transfer."
+          "No accepted tracks are available to transfer."
         );
       }
 
@@ -373,31 +465,25 @@ export function usePlaylistConversion({
 
   return {
     isConversionModalOpen,
-
     conversionStatus,
-
     conversionView,
     setConversionView,
-
     conversionResults,
-
     currentTrack,
-
     processedCount,
-
     isAuthorizingAppleMusic,
-
     appleMusicAuthorizationError,
-
     createdTrackCount,
-
     matchedCount,
     uncertainCount,
+    ignoredCount,
     unmatchedCount,
     progress,
-
     startConversionAnalysis,
     continueToAppleMusic,
     closeConversionModal,
+    acceptUncertainMatch,
+    ignoreUncertainMatch,
+    resetUncertainMatch,
   };
 }
