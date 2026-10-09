@@ -24,6 +24,10 @@ import {
   createAppleMusicPlaylist,
 } from "../musickit";
 
+import {
+  buildAppleTrackIds,
+} from "../utils/buildAppleTransfer";
+
 export interface ConversionResult {
   sourceTrack: Track;
   match: MatchResult;
@@ -373,26 +377,9 @@ export function usePlaylistConversion({
         await authorizeAppleMusic();
 
       const appleTrackIds =
+      buildAppleTrackIds(
         conversionResults
-          .filter(
-            (result) =>
-              result.match.track &&
-              (
-                result.match.status ===
-                  "matched" ||
-                (
-                  result.match.status ===
-                    "uncertain" &&
-                  result.reviewDecision ===
-                    "accepted"
-                )
-              )
-          )
-          .map(
-            (result) =>
-              result.match
-                .track!.id
-          );
+      );
 
       if (
         appleTrackIds.length ===
